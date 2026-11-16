@@ -3,24 +3,34 @@ import { explainPermission } from './permissionExplanation.js';
 import useDiscardGuard from './useDiscardGuard.jsx';
 import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Buildings, UsersThree, UserCircle, LockSimple, Plus, X, CaretRight, MagnifyingGlass } from '@phosphor-icons/react';
+import { Buildings, UsersThree, UserCircle, Plus, X, CaretRight, MagnifyingGlass } from '@phosphor-icons/react';
 import { accessFromSubjects, companyId, departmentContains, PERMISSION_ROLES, subjectKey, subjectLabel, toSubjectAccess, mergeSubjects } from './permissions.js';
 import { useLocationDialog } from './LocationPicker.jsx';
 import './grants.css';
 import PermissionRolePicker, { permissionRoleOptions } from './PermissionRolePicker.jsx';
 
 const icons={company:Buildings,department:UsersThree,person:UserCircle};
-function ProtectedRows({state,rows}){return rows.map(row=><div className="grant-row" key={row.id}><UserCircle size={23}/><div className="grant-subject"><b>{state.members.find(m=>m.id===row.id)?.name||'负责人'}</b><PermissionSourceDetails explanation={explainPermission(state,{type:'person',id:row.id},{protectedRows:rows})}/></div><span className="grant-owner">可管理 <LockSimple size={13}/></span></div>);}
+export const ownerPermissionNotice=name=>`负责人：${name}，拥有全部权限`;
+export const plazaPermissionNotice=orgName=>`全员查看：${orgName}，公司成员默认可查看`;
+export function GrantNotices({state,ownerIds=[],protectedRows,floor=[],showOwners=true}){
+  const protections=showOwners?(protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['负责人']}))):[];
+  if(!protections.length&&!floor.length)return null;
+  return <div className="grant-notices">
+    {protections.map(row=><p className="grant-notice" key={row.id}>{ownerPermissionNotice(state.members.find(m=>m.id===row.id)?.name||'负责人')}</p>)}
+    {floor[0]&&<p className="grant-notice">{plazaPermissionNotice(subjectLabel(state,floor[0]))}</p>}
+  </div>;
+}
 export function GrantFields({state,value,onChange,ownerIds=[],protectedRows,floor=[],allowAdd=true,defaultRole='viewer',blocked=[],showOwners=true,heading='权限配置',explanationContext={}}){
   const [picker,setPicker]=useState(false),draft=toSubjectAccess(state,value,ownerIds),rows=mergeSubjects(draft.subjects,floor),floorKey=floor.length?subjectKey(floor[0]):'';
   const change=subjects=>onChange(accessFromSubjects(state,subjects.filter(s=>subjectKey(s)!==floorKey||s.role!=='viewer')));
   const protections=protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['负责人']}));
+  const visibleRows=rows.filter(s=>subjectKey(s)!==floorKey||s.role!=='viewer');
   return <div className="grant-fields">
+    <GrantNotices state={state} ownerIds={ownerIds} protectedRows={protections} floor={floor} showOwners={showOwners}/>
     <div className="grant-heading"><span>{heading}</span>{allowAdd&&<button type="button" className="grant-add" onClick={()=>setPicker(true)}><Plus size={14}/>添加授权对象</button>}</div>
     <div className="grant-list">
-      {showOwners&&<ProtectedRows state={state} rows={protections}/>}
-      {rows.map(s=>{const Icon=icons[s.type],label=subjectLabel(state,s),fixed=subjectKey(s)===floorKey,actions=fixed?(s.role==='viewer'?[]:[{value:'remove',label:'撤销额外公司授权',description:'撤销后，公司全员仍可查看'}]):undefined;const explanation=explainPermission(state,s,{local:mergeSubjects(explanationContext.local||[],draft.subjects),inherited:explanationContext.inherited||[],excluded:explanationContext.excluded||[],floor,protectedRows:protections,sourceLabel:explanationContext.sourceLabel||'父级'});return <div className="grant-row" key={subjectKey(s)}><Icon size={22}/><div className="grant-subject"><b>{label}</b>{fixed&&<small>公司全员查看 · 固定</small>}<PermissionSourceDetails explanation={explanation} localRole={draft.subjects.find(subject=>subjectKey(subject)===subjectKey(s))?.role}/></div><PermissionRolePicker label={`${label}的权限`} value={s.role} displayValue={explanation.effectiveRole} options={permissionRoleOptions(s.role,actions)} onChange={role=>change(role==='remove'?rows.filter(row=>subjectKey(row)!==subjectKey(s)):rows.map(row=>subjectKey(row)===subjectKey(s)?{type:s.type,id:s.id,role}:row))}/></div>;})}
-      {allowAdd&&!rows.length&&<p className="grant-empty">尚未添加其他授权对象</p>}
+      {visibleRows.map(s=>{const Icon=icons[s.type],label=subjectLabel(state,s),fixed=subjectKey(s)===floorKey,actions=fixed?(s.role==='viewer'?[]:[{value:'remove',label:'撤销额外公司授权',description:'撤销后，公司全员仍可查看'}]):undefined;const explanation=explainPermission(state,s,{local:mergeSubjects(explanationContext.local||[],draft.subjects),inherited:explanationContext.inherited||[],excluded:explanationContext.excluded||[],floor,protectedRows:protections,sourceLabel:explanationContext.sourceLabel||'父级'});return <div className="grant-row" key={subjectKey(s)}><Icon size={22}/><div className="grant-subject"><b>{label}</b>{fixed&&<small>额外公司授权</small>}<PermissionSourceDetails explanation={explanation} localRole={draft.subjects.find(subject=>subjectKey(subject)===subjectKey(s))?.role}/></div><PermissionRolePicker label={`${label}的权限`} value={s.role} displayValue={explanation.effectiveRole} options={permissionRoleOptions(s.role,actions)} onChange={role=>change(role==='remove'?rows.filter(row=>subjectKey(row)!==subjectKey(s)):rows.map(row=>subjectKey(row)===subjectKey(s)?{type:s.type,id:s.id,role}:row))}/></div>;})}
+      {allowAdd&&!visibleRows.length&&<p className="grant-empty">尚未添加其他授权对象</p>}
     </div>
     {picker&&<SubjectPicker state={state} ownerIds={ownerIds} blocked={[...blocked,...floor]} selected={draft.subjects} onClose={()=>setPicker(false)} onConfirm={selected=>{change(selected.map(s=>draft.subjects.find(row=>subjectKey(row)===subjectKey(s))||{...s,role:defaultRole}));setPicker(false);}}/>}
   </div>;
@@ -37,9 +47,11 @@ export function LayeredGrantFields({state,local,inherited,excluded,onChange,owne
     if(PERMISSION_ROLES.some(([role])=>role===action))custom=[...custom.filter(s=>subjectKey(s)!==key),...((floor.some(s=>subjectKey(s)===key)&&action==='viewer')?[]:[{type:subject.type,id:subject.id,role:action}])];
     onChange(accessFromSubjects(state,custom),removed);
   };
-  return <div className="grant-fields layered-grants"><div className="grant-heading"><span>所有协作者</span>{!personal&&<button type="button" className="grant-add" onClick={()=>setPicker(true)}><Plus size={14}/>添加协作者</button>}</div><div className="grant-list">
-    <ProtectedRows state={state} rows={protectedRows||[...new Set(ownerIds)].map(id=>({id,sources:['负责人']}))}/>
-    {rows.map(subject=>{const key=subjectKey(subject),Icon=icons[subject.type],label=subjectLabel(state,subject),parent=base.find(s=>subjectKey(s)===key),custom=local.subjects.find(s=>subjectKey(s)===key);const explanation=explainPermission(state,subject,{local:local.subjects,inherited:inherited.subjects,excluded,floor,protectedRows:protectedRows||[],sourceLabel});return <div className="grant-row" key={key}><Icon size={22}/><div className="grant-subject"><b>{label}</b>{floor.some(s=>subjectKey(s)===key)&&<small>公司全员查看 · 固定</small>}<PermissionSourceDetails explanation={explanation} localRole={custom?.role}/></div><PermissionRolePicker label={`${label}的权限`} value={custom?.role||subject.role} displayValue={explanation.effectiveRole} groupLabel="设置本项权限" options={permissionRoleOptions(subject.role,[...(parent?[{value:'remove-inherited',label:'移除继承权限',description:'只移除此项的继承来源，不改变上级'}]:[]),...(custom?[{value:'remove-local',label:'移除本项授权',description:'其他来源的有效授权继续保留'}]:[]),...(parent&&custom?[{value:'remove',label:'移除该协作者',description:'移除本项授权及该对象的继承来源'}]:[])])} onChange={role=>change(subject,role)}/></div>;})}
+  const protections=protectedRows||[...new Set(ownerIds)].map(id=>({id,sources:['负责人']}));
+  const visibleRows=rows.filter(subject=>{const key=subjectKey(subject);return !floor.some(s=>subjectKey(s)===key)||subject.role!=='viewer';});
+  return <div className="grant-fields layered-grants"><GrantNotices state={state} ownerIds={ownerIds} protectedRows={protections} floor={floor}/><div className="grant-heading"><span>所有协作者</span>{!personal&&<button type="button" className="grant-add" onClick={()=>setPicker(true)}><Plus size={14}/>添加协作者</button>}</div><div className="grant-list">
+    {visibleRows.map(subject=>{const key=subjectKey(subject),Icon=icons[subject.type],label=subjectLabel(state,subject),parent=base.find(s=>subjectKey(s)===key),custom=local.subjects.find(s=>subjectKey(s)===key),fixed=floor.some(s=>subjectKey(s)===key);const explanation=explainPermission(state,subject,{local:local.subjects,inherited:inherited.subjects,excluded,floor,protectedRows:protections,sourceLabel});return <div className="grant-row" key={key}><Icon size={22}/><div className="grant-subject"><b>{label}</b>{fixed&&<small>额外公司授权</small>}<PermissionSourceDetails explanation={explanation} localRole={custom?.role}/></div><PermissionRolePicker label={`${label}的权限`} value={custom?.role||subject.role} displayValue={explanation.effectiveRole} groupLabel="设置本项权限" options={permissionRoleOptions(subject.role,[...(parent?[{value:'remove-inherited',label:'移除继承权限',description:'只移除此项的继承来源，不改变上级'}]:[]),...(custom?[{value:'remove-local',label:'移除本项授权',description:'其他来源的有效授权继续保留'}]:[]),...(parent&&custom?[{value:'remove',label:'移除该协作者',description:'移除本项授权及该对象的继承来源'}]:[])])} onChange={role=>change(subject,role)}/></div>;})}
+    {!visibleRows.length&&<p className="grant-empty">尚未添加其他授权对象</p>}
     </div>
     {!!excluded.length&&<details className="excluded-grants"><summary>已移除的继承授权（{excluded.length}）</summary>{excluded.map(subject=><div key={subjectKey(subject)}><span>{subjectLabel(state,subject)}{!inherited.subjects.some(s=>subjectKey(s)===subjectKey(subject))&&<small>父级当前未授权</small>}</span><button type="button" aria-label={`恢复继承 ${subjectLabel(state,subject)}`} onClick={()=>onChange(local,excluded.filter(s=>subjectKey(s)!==subjectKey(subject)))}>恢复</button></div>)}</details>}
     {picker&&<SubjectPicker state={state} ownerIds={ownerIds} blocked={floor} selected={local.subjects} onClose={()=>setPicker(false)} onConfirm={selected=>{onChange(accessFromSubjects(state,selected.map(s=>local.subjects.find(x=>subjectKey(x)===subjectKey(s))||{...s,role:'viewer'})),excluded);setPicker(false);}}/>}

@@ -16,13 +16,13 @@ import {
   Archive, ArrowClockwise, ArrowCounterClockwise, ArrowUp, ArrowsDownUp, ArrowsOutSimple,
   BookBookmark, Books, Briefcase, CaretDown, CaretRight, ChartBar, ChatCircleDots,
   CheckSquare, Clock, Compass, Copy, CornersOut, DotsThree, Eraser, Eye, File, FileText,
-  FolderOpen, Gear, Globe, House, Lightbulb, LinkSimple, List, ListNumbers, MagnifyingGlass,
+  FolderOpen, Globe, House, Lightbulb, LinkSimple, List, ListNumbers, MagnifyingGlass,
   Microphone, Note, PaintRoller, PencilLine, PencilSimple, Plus, ProjectorScreenChart,
   PushPin, Robot, ShareNetwork, SidebarSimple, Sparkle, StarFour, TextAlignLeft, TextIndent,
   TextOutdent, Trash, UploadSimple, UserCircle, UsersThree, Warning, X,
 } from "@phosphor-icons/react";
 import { publicAsset } from "../publicAsset.js";
-import AccessDialog, { ScopeBadge, LibraryCreateDialog, ShareDialog } from "./AccessDialog.jsx";
+import AccessDialog, { LibraryCreateDialog, ShareDialog } from "./AccessDialog.jsx";
 import FileMenu from './FileMenu.jsx';
 import PinnedLibraries from './PinnedLibraries.jsx';
 import HomeDisplaySettings from './HomeDisplaySettings.jsx';
@@ -35,7 +35,7 @@ import { RenameDialog, FileInformation, DownloadDialog, PrintDialog, ConfirmActi
 import BatchRelocateDialog from './BatchRelocateDialog.jsx';
 import RestoreLocationDialog from './RestoreLocationDialog.jsx';
 import { deleteLibrary, restoreLibrary, permanentlyDeleteLibrary, libraryDeletionSnapshot } from './libraryLifecycle.js';
-import { SCOPE_LABELS, VIEW_LABELS, activeNode, actualNodes, contentRights, effectiveAccess, libraryRights, librariesForView, libraryStats, projectedEntries, spaceAccess, validView, safeFolderTrail, deleteContent, restoreContent, contentTree, libraryType, LIBRARY_TYPES, restoreNeedsLocation } from "./access.js";
+import { VIEW_LABELS, activeNode, actualNodes, contentRights, libraryRights, librariesForView, libraryStats, projectedEntries, spaceAccess, validView, safeFolderTrail, deleteContent, restoreContent, contentTree, libraryType, LIBRARY_TYPES, restoreNeedsLocation } from "./access.js";
 import CreationDialog, { CreateMenu, ContentIcon, launchDocument } from "./CreationFlow.jsx";
 import { UploadDialog, UploadQueue, UploadMenu } from "./UploadFlow.jsx";
 import UploadedFilePreview from "./UploadedFilePreview.jsx";
@@ -52,7 +52,7 @@ import { relocationSource } from "./contentOperations.js";
 import { contentView } from "./access.js";
 import { contentLabel, contentText, folderTrail, parseContent, writableLibraries, validateDestination } from "./contentCreation.js";
 import {
-  can, loadState, memberName, nodeRole, normalizeState, seedState, ROLE_OPTIONS, roleLabel, saveState,
+  can, loadState, memberName, nodeRole, normalizeState, seedState, roleLabel, saveState,
   spaceRole, teamRole, visibleNodes, visibleSpaces, STORAGE_KEY,
 } from "./store.js";
 
@@ -151,10 +151,9 @@ export function KnowledgeApp() {
     return () => window.removeEventListener("hashchange", sync);
   }, []);
 
-  useEffect(() => { setDetailAiOpen(false);setDetailAiTarget(null); setMenuFor(""); setCreateContext(null); setLibraryDialog(false);setRelocateContext(null); setAccessTarget(null);setHandoverTarget(null);setActionContext(null); setConfirm(null); setUploadContext(null);pendingUpload.current=null;setFolderDraft(current=>current&&location.path==='space'&&current.spaceId===location.id&&current.parentId===(location.folder||'')&&current.userId===state.viewAs?current:null); }, [location.path, location.id, location.folder, location.view, state.viewAs]);
+  useEffect(() => { if(location.path==='admin'){go('/home');return;} setDetailAiOpen(false);setDetailAiTarget(null); setMenuFor(""); setCreateContext(null); setLibraryDialog(false);setRelocateContext(null); setAccessTarget(null);setHandoverTarget(null);setActionContext(null); setConfirm(null); setUploadContext(null);pendingUpload.current=null;setFolderDraft(current=>current&&location.path==='space'&&current.spaceId===location.id&&current.parentId===(location.folder||'')&&current.userId===state.viewAs?current:null); }, [location.path, location.id, location.folder, location.view, state.viewAs]);
 
   const userId = state.viewAs;
-  const me = state.members.find((item) => item.id === userId);
   const spaces = visibleSpaces(state, userId);
   const say=(text,target=null)=>{setNotice(text);setNoticeAction(target?{...target,userId}:null);setNoticePaused(false);};
   const closeNotice=()=>{setNotice('');setNoticeAction(null);setNoticePaused(false);};
@@ -322,7 +321,6 @@ export function KnowledgeApp() {
           <button className={location.path === "shared" ? "active" : ""} onClick={() => { setQuery(""); go("/shared"); }}><UsersThree size={19} />共享知识库</button>
           <button className={location.path === "personal" ? "active" : ""} onClick={() => { setQuery(""); go("/personal"); }}><BookBookmark size={19} weight="fill" />个人知识库</button>
           <button className={location.path === "recycle" ? "active" : ""} onClick={() => go("/recycle")}><Trash size={19} />回收站</button>
-          <button className={location.path === "admin" ? "active" : ""} onClick={() => go("/admin")}><Gear size={19} />管理后台</button>
         </nav>
         <PinnedLibraries state={state} userId={userId} update={update} onOpen={(id,view)=>go(spaceUrl(id,view))} onNotice={say}/>
         <div className="kb-identity">
@@ -343,7 +341,6 @@ export function KnowledgeApp() {
         {isLibrary && <LibraryPage state={state} userId={userId} section={section} query={query} setQuery={setQuery} startCreate={startCreate} startUpload={startUpload} onCreateLibrary={() => setLibraryDialog(true)} update={update} openSettings={openSettings} say={say} />}
         {isDetail && <SpaceDetail state={state} userId={userId} space={space} query={query} folderPath={folderPath} menuFor={menuFor} setMenuFor={setMenuFor} detailAiOpen={detailAiOpen} setDetailAiOpen={setDetailAiOpen} openAccess={openAccess} openShare={openShare} openSettings={openSettings} onAction={fileAction} onBatch={batchAction} locateId={location.locate} origin={location.view} startCreate={startCreate} startUpload={startUpload} folderDraft={folderDraft} onCloseFolder={()=>setFolderDraft(null)} onFolderCreated={node=>say(`已创建文件夹「${node.name}」`)} openDoc={openDoc} openRelocate={openRelocate} say={say} setConfirm={setConfirm} update={update} />}
         {location.path === "recycle" && <RecyclePage state={state} userId={userId} update={update} setConfirm={setConfirm} say={say} />}
-        {location.path === "admin" && (me?.admin ? <AdminPage state={state} update={update} /> : <Empty title="没有管理后台入口" body="当前身份不是管理员。换到周宁可以查看演示用的组织、许可和团队默认权限。" />)}
       </div>
       {(isDetail||location.path==='home')&&drawerSpace&&<SpaceAiDrawer open={drawerVisible} key={`${userId}:${detailAiTarget?.id||drawerSpace.id}`} state={state} userId={userId} space={drawerSpace} targetId={detailAiTarget?.id} onOpen={openDoc} onClose={() => {setDetailAiOpen(false);requestAnimationFrame(()=>{const target=document.querySelector('[aria-controls="knowledge-context-ai-drawer"]')||(detailAiReturnFocus.current?.isConnected?detailAiReturnFocus.current:document.querySelector('.knowledge-home-header input'));if(target?.isConnected)target.focus();});}} />}
     </section>
@@ -384,7 +381,7 @@ function HomePage({ state, userId, query, setQuery, onOpen, update, startUpload,
       {list.map(node=>{
         const library=state.spaces.find(item=>item.id===node.spaceId),visited=visits.find(r=>r.id===node.id);
         const values={location:<span title={library?.name}>{library?.name||'—'}</span>,owner:<span><UserCircle size={18} weight="fill"/>{memberName(state,responsibleId(node))}</span>,createdAt:node.createdAt?formatTime(node.createdAt):'—',updatedAt:node.updatedAt?formatTime(node.updatedAt):'—',visitedAt:visited?(visited.visitedAt?formatTime(visited.visitedAt):'更早访问'):'—'};
-        return <div role="button" aria-label={`打开 ${node.name}`} tabIndex={0} className="knowledge-document-row home-document-row" style={grid} key={node.id} onClick={()=>onOpen(node.id)} onKeyDown={e=>{if(e.target===e.currentTarget&&e.key==='Enter')onOpen(node.id);}}><span><ContentIcon node={node}/><span title={node.name}>{node.name}</span>{node.creationDraft?<span className="creation-draft-badge">新建草稿</span>:<ScopeBadge access={effectiveAccess(state,node)}/>}</span>{columns.map(column=><span key={column.id} data-column={column.id}>{values[column.id]}</span>)}<FileMenu state={state} node={node} userId={userId} onAction={onAction} showShare onShare={openShare}/></div>;
+        return <div role="button" aria-label={`打开 ${node.name}`} tabIndex={0} className="knowledge-document-row home-document-row" style={grid} key={node.id} onClick={()=>onOpen(node.id)} onKeyDown={e=>{if(e.target===e.currentTarget&&e.key==='Enter')onOpen(node.id);}}><span><ContentIcon node={node}/><span title={node.name}>{node.name}</span>{node.creationDraft?<span className="creation-draft-badge">新建草稿</span>:null}</span>{columns.map(column=><span key={column.id} data-column={column.id}>{values[column.id]}</span>)}<FileMenu state={state} node={node} userId={userId} onAction={onAction} showShare onShare={openShare}/></div>;
       })}
     </div></div>
     {!list.length && <Empty title={query.trim()?"没有找到相关内容":tab==="recent"?"还没有访问记录":tab==="favorite"?"还没有收藏":tab==="shared"?"暂无与我共享的内容":"还没有共享内容"} body={query.trim()?"换一个关键词试试。":tab==="favorite"?"在文件或文件夹菜单中点击收藏，便于下次快速打开。":tab==="mine"?"给自己的内容添加协作者后，会显示在这里。":tab==="shared"?"其他人与你定向共享的内容会显示在这里。":"打开知识库中的内容，开始使用。"} />}
@@ -513,39 +510,6 @@ function RecyclePage({state,userId,update,setConfirm,say}){
   </>;
 }
 
-function AdminPage({ state, update }) {
-  const [section, setSection] = useState("members");
-  const [name, setName] = useState("");
-  const used = state.members.filter((item) => item.licensed).length;
-  const addMember = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    update((current) => ({ ...current, members: [...current.members, { id: `member-${Date.now()}`, name: trimmed, staffId: `demo.${current.members.length + 1}`, deptId: "product", title: "演示成员", admin: false, licensed: current.members.filter((item) => item.licensed).length < current.licenseLimit, tags: [] }] }));
-    setName("");
-  };
-  return <>
-    <header className="knowledge-header"><div><h1>管理后台</h1><p>{state.org.name} 的演示组织。成员、许可和团队默认权限只写在这台浏览器里。</p></div></header>
-    <div className="kb-admin-nav" role="tablist">{[["members", "组织与成员"], ["license", "管理员与许可"], ["teams", "团队默认权限"]].map(([id, label]) => <button key={id} className={section === id ? "active" : ""} type="button" onClick={() => setSection(id)}>{label}</button>)}</div>
-    {section === "members" && <div>
-      <ul className="kb-dept-list">{state.departments.map((dept) => <li key={dept.id}>{dept.name}</li>)}</ul>
-      <p className="kb-meta">标签：{state.tags.map((tag) => tag.name).join("、")}</p>
-      <div className="knowledge-document-table"><div className="knowledge-document-row head"><span>成员</span><span>部门</span><span>账号</span><span>标签</span><span /></div>{state.members.map((member) => <div className="knowledge-document-row" key={member.id}><span><UserCircle size={18} weight="fill" />{member.name}</span><span>{state.departments.find((dept) => dept.id === member.deptId)?.name}</span><span>{member.staffId}</span><span>{member.tags.map((id) => state.tags.find((tag) => tag.id === id)?.name).filter(Boolean).join("、") || "无标签"}</span><span /></div>)}</div>
-      <div className="kb-add-row"><input value={name} onChange={(event) => setName(event.target.value)} placeholder="演示成员姓名" /><button type="button" onClick={addMember}>添加演示成员</button></div>
-    </div>}
-    {section === "license" && <div>
-      <div className="kb-license"><article><strong>{used}/{state.licenseLimit}</strong><span>已分配许可，不是真实套餐</span></article><article><strong>{state.members.filter((item) => item.admin).map((item) => item.name).join("、")}</strong><span>企业管理员</span></article></div>
-      <div className="knowledge-document-table"><div className="knowledge-document-row head"><span>成员</span><span>职务</span><span>许可</span><span>管理员</span><span /></div>{state.members.map((member) => <div className="knowledge-document-row" key={member.id}><span>{member.name}</span><span>{member.title}</span><span>{member.licensed ? "已分配" : "未分配"}</span><span>{member.admin ? "是" : "否"}</span><span /></div>)}</div>
-    </div>}
-    {section === "teams" && <div>
-      <div className="kb-add-row">
-        <label className="kb-field">谁可以创建团队<select value={state.teamDefaults.whoCanCreate} onChange={(event) => update((current) => ({ ...current, teamDefaults: { ...current.teamDefaults, whoCanCreate: event.target.value } }))}><option value="all">所有人</option><option value="admin">仅企业管理员</option></select></label>
-        <label className="kb-field">新知识库给团队成员的角色<select value={state.teamDefaults.spaceMemberInherit} onChange={(event) => update((current) => ({ ...current, teamDefaults: { ...current.teamDefaults, spaceMemberInherit: event.target.value } }))}>{ROLE_OPTIONS.filter(([value]) => value !== "none").map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-      </div>
-      {state.teams.map((team) => <article key={team.id}><h2 style={{ fontSize: 18, margin: "22px 0 6px" }}>{team.name}</h2><p className="kb-meta">{team.intro}</p><div className="knowledge-document-table"><div className="knowledge-document-row head"><span>成员</span><span>团队角色</span><span /><span /><span /></div>{Object.entries(team.members).map(([id, role]) => <div className="knowledge-document-row" key={id}><span>{memberName(state, id)}</span><span>{roleLabel(role)}</span><span /><span /><span /></div>)}</div></article>)}
-    </div>}
-  </>;
-}
-
 function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEditing = false, origin = "", fromFolder = "", say, setConfirm, onOpen, openShare, onAction, notice, setNotice,noticeAction,onNoticeView,onNoticePause,onNoticeClose }) {
   const node = state.nodes.find((item) => item.id === nodeId);
   const role = nodeRole(state, node, userId);
@@ -657,7 +621,6 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
         <div className="document-window-actions">
           <span className="new-saved-status" role="status">{isNewDraft?"新建草稿 · 首次保存后生效":editing ? draft !== baseBody.current ? "有未保存修改" : "编辑中" : "已保存"}</span><span>{formatTime(node.updatedAt)}</span>
           {!editable && <em className="kb-readonly">{node.format==='file'?'文件预览':`只读 · ${roleLabel(role)}`}</em>}
-          <ScopeBadge access={effectiveAccess(state, node)} />
           {editing && <><button type="button" onClick={() => isNewDraft||draft !== baseBody.current ? setLeave("cancel") : discard()}>{isNewDraft?'放弃新建':'取消编辑'}</button><button type="button" onClick={save}>保存</button></>}
           <button type="button" disabled={!role.manage||editing} title={editing?'请先保存或取消编辑':!role.manage?'需要管理权限':undefined} onClick={() => openShare(node)}><ShareNetwork size={18} />分享</button>
           <button type="button" aria-label="问 AI" onClick={() => setAiOpen(v=>!v)}><Sparkle size={18} />AI</button>

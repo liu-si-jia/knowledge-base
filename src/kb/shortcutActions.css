@@ -125,3 +125,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Keep the create/upload menus above following library cards and file rows
+   so middle items (表格 / 幻灯片) remain clickable when the menu overlaps them. */
+.kb-shortcut-actions,
+.knowledge-home-actions {
+  position: relative;
+  z-index: 6;
+}
+.new-create-menu:has(.new-create-options),
+.upload-menu:has(.upload-menu-options) {
+  position: relative;
+  z-index: 60;
+}
+.knowledge-detail-list-toolbar {
+  position: relative;
+  z-index: 6;
+}

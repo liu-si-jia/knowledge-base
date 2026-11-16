@@ -2,23 +2,31 @@ import { createContent, uniqueContentName, validateDestination } from './content
 
 export const MAX_UPLOAD_FILES=20;
 export const MAX_FOLDER_FILES=20;
+export const NESTED_FOLDER_ERROR='只能上传内部全是文件、不含子文件夹的目录，请重新选择';
+export const EMPTY_FOLDER_ERROR='空文件夹无法上传，请选择内部含有文件且不含子文件夹的目录';
 export const uploadPath=file=>file.webkitRelativePath||file.name;
 export const uploadLimit=files=>files.some(file=>file.webkitRelativePath)?MAX_FOLDER_FILES:MAX_UPLOAD_FILES;
+export const folderPathParts=file=>uploadPath(file).split('/');
+export const hasNestedFolders=files=>files.some(file=>folderPathParts(file).length>2);
 export function validateUploadSelection(files){
   if(!files.length)throw Error('请先选择要上传的文件或文件夹');
   if(files.length>uploadLimit(files))throw Error(`每批最多上传 ${uploadLimit(files)} 个文件`);
   for(const file of files){
-    const path=uploadPath(file).split('/');
+    const path=folderPathParts(file);
     if(path.some(part=>!part||part==='.'||part==='..'||part.includes('\\'))||path.at(-1)!==file.name)throw Error('文件夹路径无效，请重新选择');
   }
+  if(hasNestedFolders(files))throw Error(NESTED_FOLDER_ERROR);
 }
 
 // Run inside the same state transaction as the file insertion. A cancelled or
 // failed first file leaves no empty directory tree or reserved names behind.
+// Folder uploads may create a single root folder for the selected directory,
+// but never additional nested levels.
 export function prepareUploadLocation(state,fields,userId){
   validateDestination(state,fields,userId);
   const parts=fields.relativePath?.split('/').slice(0,-1)||[];
   if(!parts.length)return {state,fields,assignments:[]};
+  if(parts.length>1)throw Error(NESTED_FOLDER_ERROR);
   if(!fields.folderSession||parts.some(p=>!p||p==='.'||p==='..'||p.includes('\\')))throw Error('文件夹路径无效，请重新上传');
   let current=state,parentId=fields.parentId||'';const assignments=[];
   for(let index=0;index<parts.length;index++){
