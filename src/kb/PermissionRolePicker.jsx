@@ -19,9 +19,9 @@ export function permissionRoleOptions(value,actions=[{value:'remove',label:'移�
   ];
 }
 
-export default function PermissionRolePicker({label,value,displayValue=value,onChange,options,groupLabel='',disabled=false}){
+export default function PermissionRolePicker({label,value,displayValue=value,onChange,options,groupLabel='',disabled=false,triggerLabel}){
   const [open,setOpen]=useState(false),[position,setPosition]=useState(null),trigger=useRef(null),menu=useRef(null),startFocus=useRef('current'),id=useId();
-  const selected=options.find(item=>item.value===displayValue),caption=selected?.label||PERMISSION_ROLES.find(([id])=>id===displayValue)?.[1]||'选择权限';
+  const selected=options.find(item=>item.value===displayValue),caption=triggerLabel||selected?.label||PERMISSION_ROLES.find(([id])=>id===displayValue)?.[1]||'选择权限';
   const [status,setStatus]=useState(''),changed=useRef(false);
   useEffect(()=>{if(!changed.current)return;changed.current=false;setStatus(displayValue!==value?`本项：${PERMISSION_ROLES.find(([id])=>id===value)?.[1]||'原有权限'}；实际：${caption}`:'');},[value,displayValue]);
   useEffect(()=>{if(!status)return;const timer=setTimeout(()=>setStatus(''),5000);return()=>clearTimeout(timer);},[status]);

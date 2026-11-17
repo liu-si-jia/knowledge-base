@@ -2,6 +2,7 @@ import { creatorId, responsibleId, isOrganizationContent, initializeOwnership } 
 import { validateContentDestination } from './destinations.js';
 import { validateContentName, uploadedExtension } from './contentCreation.js';
 import { accessFromSubjects, companyId, legacyRights, PERMISSION_ROLES, subjectExists, subjectKey, subjectMatches, subjectRights, toSubjectAccess, mergeSubjects } from './permissions.js';
+import { composeOrdinarySubjects, validateLocalEdits } from './collaboratorRules.js';
 export const ACCESS_VERSION=3;
 export const LIBRARY_TYPES={personal:'个人知识库',shared:'共享知识库',plaza:'知识广场'};
 export const libraryType=space=>space?.kind||'shared';
@@ -46,8 +47,8 @@ function ordinaryAccess(state,node,seen=new Set()){
   const space=state.spaces.find(s=>s.id===node.spaceId);if(!space||libraryType(space)==='personal')return empty();
   const parent=state.nodes.find(n=>n.id===node.parentId&&n.spaceId===node.spaceId&&n.type==='folder');
   const inherited=parent?ordinaryAccess(state,parent,seen):libraryLocalAccess(state,space);
-  const excluded=new Set((node.inheritedExclusions||[]).map(subjectKey));
-  return accessFromSubjects(state,mergeSubjects(inherited.subjects.filter(s=>!excluded.has(subjectKey(s))),node.localAccess?.subjects||[]));
+  // Parent changes do not rewrite local values; effective rights union both layers.
+  return accessFromSubjects(state,composeOrdinarySubjects(inherited.subjects,node.localAccess?.subjects||[]));
 }
 export function parentAccess(state,node){const parent=state.nodes.find(n=>n.id===node?.parentId&&n.spaceId===node?.spaceId&&n.type==='folder');return parent?effectiveAccess(state,parent):spaceAccess(state,state.spaces.find(s=>s.id===node?.spaceId));}
 export function effectiveAccess(state,node){
@@ -73,7 +74,7 @@ export function migrateAccess(state){const owned=initializeOwnership(state);retu
 export function permissionLayers(state,node){
   const space=state.spaces.find(s=>s.id===node.spaceId),protectedRows=protectedManagers(state,node),owners=protectedRows.map(row=>row.id);
   const parent=state.nodes.find(n=>n.id===node.parentId&&n.spaceId===node.spaceId&&n.type==='folder');
-  return {inherited:toSubjectAccess(state,parent?ordinaryAccess(state,parent):libraryLocalAccess(state,space),owners),local:toSubjectAccess(state,node.localAccess||empty(),owners),excluded:(node.inheritedExclusions||[]).filter(s=>!(s.type==='person'&&owners.includes(s.id))),protectedRows,floor:plazaFloor(state,space),personal:libraryType(space)==='personal'};
+  return {inherited:toSubjectAccess(state,parent?ordinaryAccess(state,parent):libraryLocalAccess(state,space),owners),local:toSubjectAccess(state,node.localAccess||empty(),owners),excluded:[],protectedRows,floor:plazaFloor(state,space),personal:libraryType(space)==='personal'};
 }
 export function actualNodes(state,space,userId,view='all'){
   if(!space||space.deletedAt||view!=='all'&&view!==libraryType(space))return [];
@@ -101,7 +102,7 @@ export function validateAccess(state,access,ownerIds=[]){
   const subjects=source.filter(s=>!(s.type==='person'&&ownerIds.includes(s.id))).map(s=>{
     if(!subjectExists(state,s))throw Error('部分公司、部门或人员已失效，请重新选择');const key=subjectKey(s);if(seen.has(key))throw Error('同一授权对象不能重复添加');seen.add(key);
     if(!PERMISSION_ROLES.some(([role])=>role===s.role)&&s.role!=='legacy')throw Error('请选择有效权限');
-    return {type:s.type,id:s.id,role:s.role,...(s.role==='legacy'?{rights:legacyRights(s.rights)}:{})};
+    return {type:s.type,id:s.id,role:s.role,...(s.role==='legacy'?{rights:legacyRights(s.rights)}:{}),...(typeof s.addedBy==='string'&&s.addedBy?{addedBy:s.addedBy}:{})};
   });return accessFromSubjects(state,subjects);
 }
 export function accessFingerprint(state,item,entity){const space=entity==='space'?item:state.spaces.find(s=>s.id===item?.spaceId);return JSON.stringify([creatorId(item),responsibleId(item),item?.ownership,item?.spaceId,space?.kind,item?.access,item?.localAccess,item?.inheritedExclusions,entity==='node'?parentAccess(state,item):null,protectedManagers(state,item,entity)]);}
@@ -116,11 +117,9 @@ export function saveEntityAccess(state,{id,entity='node',access,expected,localAc
   // grants/exclusions so unrelated saves do not erase post-handover rights.
   const isProtected=s=>s.type==='person'&&owners.includes(s.id);
   const retained=libraryType(space)==='personal'?[]:toSubjectAccess(state,(entity==='space'?item.access:item.localAccess)||empty()).subjects.filter(isProtected);
-  const savedAccess=accessFromSubjects(state,mergeSubjects(retained,checked.subjects));
-  const excluded=[...new Map([
-    ...(inheritedExclusions??item.inheritedExclusions??[]).filter(s=>!isProtected(s)),
-    ...(item.inheritedExclusions||[]).filter(isProtected),
-  ].filter(s=>['company','department','person'].includes(s.type)&&typeof s.id==='string').map(s=>[subjectKey(s),{type:s.type,id:s.id}])).values()];
+  const ordinary=validateLocalEdits(checked.subjects,toSubjectAccess(state,(entity==='space'?item.access:item.localAccess)||empty()).subjects,entity==='node'?permissionLayers(state,item).inherited.subjects:[],userId);
+  const savedAccess=accessFromSubjects(state,mergeSubjects(retained,ordinary));
+  const excluded=[]; // Retired: inherited grants cannot be excluded.
   return {...state,[collection]:state[collection].map(n=>n.id===id?{...n,...(entity==='space'?{access:savedAccess}:{permissionMode:'layered',localAccess:savedAccess,inheritedExclusions:excluded}),updatedAt:new Date().toISOString()}:n)};
 }
 export function creationAccess(state,fields){return {inherit:true,access:parentAccess(state,fields)};}

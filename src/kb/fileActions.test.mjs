@@ -23,12 +23,13 @@ test('增量分享只增本项授权，不再冻结上级；父级撤权仅影�
   assert.throws(()=>addCollaborators(s,{id:a.id,subjects:[person('zhao-heng','viewer')]},s.meId),/已有直接授权/);
   s=saveEntityAccess(s,{id:lib.id,entity:'space',access:accessFromSubjects(s,[])},s.meId);assert.equal(contentRights(s,item,'chen-ke').manage,false);assert.equal(contentRights(s,item,'zhao-heng').edit,true);
 });
-test('继承分享保留组织来源及重叠授权最高档，不影响独立子项',()=>{
+test('新增不同对象的本项授权不影响已继承来源，也不改写独立子项',()=>{
   let {s,lib,folder,child}=fixture();s=saveEntityAccess(s,{id:lib.id,entity:'space',access:accessFromSubjects(s,[{type:'company',id:companyId(s),role:'viewer'},{type:'department',id:'product',role:'editor'}])},s.meId);
   s=saveEntityAccess(s,{id:child.id,access:accessFromSubjects(s,[]),inherit:false},s.meId);
   const original=structuredClone(s.nodes.find(n=>n.id===child.id));
   s=addCollaborators(s,{id:folder.id,subjects:[person('chen-ke','viewer')],confirmedIndependent:true},s.meId);
   assert.equal(contentRights(s,s.nodes.find(n=>n.id===folder.id),'chen-ke').edit,true);assert.deepEqual(s.nodes.find(n=>n.id===child.id),original);
+  assert.throws(()=>addCollaborators(s,{id:folder.id,subjects:[{type:'department',id:'product',role:'viewer'}],confirmedIndependent:true},s.meId),/继承授权/);
 });
 test('新增授权提交前撤权或变更授权会阻止，原状态完全不变',()=>{
   const {s,a}=fixture(),expected=accessFingerprint(s,a,'node');s.spaces.at(-1).access=accessFromSubjects(s,[]);const before=structuredClone(s);
@@ -52,10 +53,15 @@ test('批量移动重名整批阻止；复制自动唯一；原状态及缓存�
   let result=performBatch(s,{ids:[a.id,b.id],spaceId:lib.id,action:'copy',parentId:''},s.meId);const again=performBatch(result.state,{ids:[a.id,b.id],spaceId:lib.id,action:'copy',parentId:''},s.meId);
   const siblings=again.state.nodes.filter(n=>n.spaceId===lib.id&&!n.parentId);assert.equal(new Set(siblings.map(n=>n.name)).size,siblings.length);assert.deepEqual(result.nodes[0].versions,[{body:'历史'}]);assert.deepEqual(s,before);
 });
-test('批量包含不可授权后代时拒绝且提示不泄露其名称，提交前重新检查撤权',()=>{
-  let {s,lib,a,folder,child,target}=fixture();s.spaces.at(-1).access=accessFromSubjects(s,[person('chen-ke','editor')]);folder.localAccess=accessFromSubjects(s,[person('chen-ke','manager')]);s.nodes.find(n=>n.id===child.id).inheritedExclusions=[{type:'person',id:'chen-ke'}];const before=structuredClone(s);
-  for(const action of ['move','copy','delete','download']){const reason=actionReason(s,folder,'chen-ke',action);assert.ok(reason);assert.equal(reason.includes(child.name),false);assert.throws(()=>performBatch(s,{ids:[a.id,folder.id],spaceId:lib.id,action,parentId:target.id},'chen-ke'));}
-  assert.deepEqual(s,before);s.spaces.at(-1).access=accessFromSubjects(s,[person('chen-ke','viewer')]);assert.throws(()=>performBatch(s,{ids:[a.id],spaceId:lib.id,action:'delete'},'chen-ke'),/管理/);
+test('本项较低权限不能削弱后代继承权限，提交前仍重新检查上级撤权',()=>{
+  let {s,lib,a,folder,child,target}=fixture();
+  s.spaces.at(-1).access=accessFromSubjects(s,[person('chen-ke','editor')]);
+  s.nodes.find(n=>n.id===folder.id).localAccess=accessFromSubjects(s,[person('chen-ke','manager')]);
+  s.nodes.find(n=>n.id===child.id).localAccess=accessFromSubjects(s,[person('chen-ke','viewer')]);
+  assert.equal(contentRights(s,s.nodes.find(n=>n.id===child.id),'chen-ke').manage,true);
+  assert.equal(actionReason(s,s.nodes.find(n=>n.id===folder.id),'chen-ke','delete'),'');
+  s.spaces.at(-1).access=accessFromSubjects(s,[person('chen-ke','viewer')]);
+  assert.throws(()=>performBatch(s,{ids:[a.id],spaceId:lib.id,action:'delete'},'chen-ke'),/管理/);
 });
 test('批量仅当前库、不可自移或进入后代，过期位置拒绝，重复父子选项只操作一次',()=>{
   const {s,lib,a,folder,child,target}=fixture();assert.throws(()=>batchPreflight(s,{ids:[a.id,'doc-faq'],spaceId:lib.id,action:'copy'},s.meId),/当前知识库/);

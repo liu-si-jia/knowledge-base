@@ -2,6 +2,7 @@ import { recordSharingChange } from './sharing.js';
 import { responsibleId } from './ownership.js';
 import { accessFingerprint, effectiveAccess, spaceAccess, saveEntityAccess, validateAccess, contentRights, libraryRights, permissionLayers, protectedManagers, libraryLocalAccess, libraryType } from './access.js';
 import { accessFromSubjects, toSubjectAccess, subjectKey } from './permissions.js';
+import { prepareAddedCollaborators, rejectNonElevatingInherited } from './collaboratorRules.js';
 
 export function permissionTarget(state,id,entity,userId){
   const item=state[entity==='space'?'spaces':'nodes'].find(n=>n.id===id),rights=entity==='space'?libraryRights(state,item,userId):contentRights(state,item,userId);
@@ -15,13 +16,17 @@ export function addCollaborators(state,{id,entity='node',subjects,expected,confi
   const target=permissionTarget(state,id,entity,userId);
   if(expected&&accessFingerprint(state,target.item,entity)!==expected)throw Error('当前权限已变化，请关闭后重新打开核对');
   if(libraryType(target.library)==='personal')throw Error('个人内容不能直接添加协作者，请先移动到共享知识库或知识广场');
-  const additions=validateAccess(state,accessFromSubjects(state,subjects),target.owners).subjects;
+  const additions=validateAccess(state,accessFromSubjects(state,prepareAddedCollaborators(subjects,userId)),target.owners).subjects;
   if(!additions.length)throw Error('请至少添加一个新的协作者');
   const direct=entity==='node'?target.layers.local:target.access;
+  const inherited=entity==='node'?target.layers.inherited.subjects:[];
   const existing=new Set(direct.subjects.map(subjectKey));
   if(additions.some(s=>existing.has(subjectKey(s))))throw Error('部分对象已有直接授权，请在权限管理中修改');
-  const combined=accessFromSubjects(state,[...direct.subjects,...additions]);
-  return recordSharingChange(state,saveEntityAccess(state,{id,entity,access:combined,...(entity==='node'?{localAccess:combined,inheritedExclusions:target.layers.excluded}:{}),expected},userId),id,entity,userId);
+  const elevated=rejectNonElevatingInherited(additions,inherited);
+  if(!elevated.length)throw Error('部分对象已有继承授权，请在权限管理中上调');
+  if(elevated.length!==additions.length)throw Error('部分对象已有继承授权，请在权限管理中上调');
+  const combined=accessFromSubjects(state,[...direct.subjects,...elevated]);
+  return recordSharingChange(state,saveEntityAccess(state,{id,entity,access:combined,...(entity==='node'?{localAccess:combined,inheritedExclusions:[]}:{}),expected},userId),id,entity,userId);
 }
 export function savePermissionDetails(state,{id,entity='node',access,inherit,expected,name,description,expectedMetadata,localAccess,inheritedExclusions,icon,cover,expectedAppearance},userId){
   const target=permissionTarget(state,id,entity,userId);

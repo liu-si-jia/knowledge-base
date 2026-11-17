@@ -36,28 +36,6 @@ export function GrantFields({state,value,onChange,ownerIds=[],protectedRows,floo
   </div>;
 }
 
-export function LayeredGrantFields({state,local,inherited,excluded,onChange,ownerIds,sourceLabel,protectedRows,floor=[],personal=false}){
-  const [picker,setPicker]=useState(false),hidden=new Set(excluded.map(subjectKey));
-  const base=inherited.subjects.filter(s=>!hidden.has(subjectKey(s))),rows=mergeSubjects(base,local.subjects,floor);
-  const change=(subject,action)=>{
-    const key=subjectKey(subject),hasParent=inherited.subjects.some(s=>subjectKey(s)===key);
-    let custom=local.subjects,removed=excluded;
-    if(action==='remove-inherited'||action==='remove')if(hasParent&&!hidden.has(key))removed=[...removed,{type:subject.type,id:subject.id}];
-    if(action==='remove-local'||action==='remove')custom=custom.filter(s=>subjectKey(s)!==key);
-    if(PERMISSION_ROLES.some(([role])=>role===action))custom=[...custom.filter(s=>subjectKey(s)!==key),...((floor.some(s=>subjectKey(s)===key)&&action==='viewer')?[]:[{type:subject.type,id:subject.id,role:action}])];
-    onChange(accessFromSubjects(state,custom),removed);
-  };
-  const protections=protectedRows||[...new Set(ownerIds)].map(id=>({id,sources:['负责人']}));
-  const visibleRows=rows.filter(subject=>{const key=subjectKey(subject);return !floor.some(s=>subjectKey(s)===key)||subject.role!=='viewer';});
-  return <div className="grant-fields layered-grants"><GrantNotices state={state} ownerIds={ownerIds} protectedRows={protections} floor={floor}/><div className="grant-heading"><span>所有协作者</span>{!personal&&<button type="button" className="grant-add" onClick={()=>setPicker(true)}><Plus size={14}/>添加协作者</button>}</div><div className="grant-list">
-    {visibleRows.map(subject=>{const key=subjectKey(subject),Icon=icons[subject.type],label=subjectLabel(state,subject),parent=base.find(s=>subjectKey(s)===key),custom=local.subjects.find(s=>subjectKey(s)===key),fixed=floor.some(s=>subjectKey(s)===key);const explanation=explainPermission(state,subject,{local:local.subjects,inherited:inherited.subjects,excluded,floor,protectedRows:protections,sourceLabel});return <div className="grant-row" key={key}><Icon size={22}/><div className="grant-subject"><b>{label}</b>{fixed&&<small>额外公司授权</small>}<PermissionSourceDetails explanation={explanation} localRole={custom?.role}/></div><PermissionRolePicker label={`${label}的权限`} value={custom?.role||subject.role} displayValue={explanation.effectiveRole} groupLabel="设置本项权限" options={permissionRoleOptions(subject.role,[...(parent?[{value:'remove-inherited',label:'移除继承权限',description:'只移除此项的继承来源，不改变上级'}]:[]),...(custom?[{value:'remove-local',label:'移除本项授权',description:'其他来源的有效授权继续保留'}]:[]),...(parent&&custom?[{value:'remove',label:'移除该协作者',description:'移除本项授权及该对象的继承来源'}]:[])])} onChange={role=>change(subject,role)}/></div>;})}
-    {!visibleRows.length&&<p className="grant-empty">尚未添加其他授权对象</p>}
-    </div>
-    {!!excluded.length&&<details className="excluded-grants"><summary>已移除的继承授权（{excluded.length}）</summary>{excluded.map(subject=><div key={subjectKey(subject)}><span>{subjectLabel(state,subject)}{!inherited.subjects.some(s=>subjectKey(s)===subjectKey(subject))&&<small>父级当前未授权</small>}</span><button type="button" aria-label={`恢复继承 ${subjectLabel(state,subject)}`} onClick={()=>onChange(local,excluded.filter(s=>subjectKey(s)!==subjectKey(subject)))}>恢复</button></div>)}</details>}
-    {picker&&<SubjectPicker state={state} ownerIds={ownerIds} blocked={floor} selected={local.subjects} onClose={()=>setPicker(false)} onConfirm={selected=>{onChange(accessFromSubjects(state,selected.map(s=>local.subjects.find(x=>subjectKey(x)===subjectKey(s))||{...s,role:'viewer'})),excluded);setPicker(false);}}/>}
-  </div>;
-}
-
 export function SubjectPicker({state,selected,ownerIds,blocked=[],onClose,onConfirm,personOnly=false,single=false,title='选择授权对象',backdropClassName=''}){
   const [chosen,setChosen]=useState(selected.map(({type,id})=>({type,id}))),[search,setSearch]=useState(''),[expanded,setExpanded]=useState(()=>new Set(['company',...state.departments.map(d=>d.id)]));
   const root=useRef(null),initialChoice=useRef(JSON.stringify(selected.map(subjectKey).sort()));

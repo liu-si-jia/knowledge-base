@@ -29,10 +29,11 @@ test('删除前再核权限和内容快照，失败不部分写入',()=>{
   const snapshot=libraryDeletionSnapshot(s,'space-handbook');s=createContent(s,{spaceId:'space-handbook',format:'doc'},s.meId).state;
   const before=structuredClone(s);assert.throws(()=>deleteLibrary(s,'space-handbook',s.meId,snapshot),/已变化/);assert.deepEqual(s,before);
 });
-test('普通管理者被子项排除时不能通过整库删除绕过权限',()=>{
+test('子项不能用本项低档削弱继承管理权，整库删除仍按实际权限校验',()=>{
   let s=fresh();s=saveEntityAccess(s,{id:'space-handbook',entity:'space',access:accessFromSubjects(s,[{type:'person',id:'lin-xia',role:'manager'}])},s.meId);
-  s=saveEntityAccess(s,{id:'doc-faq',localAccess:accessFromSubjects(s,[]),inheritedExclusions:[{type:'person',id:'lin-xia'}]},s.meId);
-  assert.throws(()=>deleteLibrary(s,'space-handbook','lin-xia'),/部分内容/);
+  assert.throws(()=>saveEntityAccess(s,{id:'doc-faq',localAccess:accessFromSubjects(s,[{type:'person',id:'lin-xia',role:'viewer'}])},s.meId),/继承权限下限/);
+  assert.equal(contentRights(s,get(s,'doc-faq'),'lin-xia').manage,true);
+  assert.doesNotThrow(()=>deleteLibrary(s,'space-handbook','lin-xia'));
 });
 test('恢复同名冲突不覆盖，非管理者不能恢复或彻底删除',()=>{
   let s=deleteLibrary(fresh(),'space-handbook','zhou-ning');

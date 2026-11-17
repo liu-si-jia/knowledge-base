@@ -10,30 +10,32 @@ import { pinnedRecords, visiblePins, pinnedLibrariesForView, togglePin, reorderP
 const person=(id,role)=>({type:'person',id,role}),empty=state=>accessFromSubjects(state,[]);
 function fixture(){let s=normalizeState(seedState());let r=createLibrary(s,{name:'分层授权验收',initializer:'shared',access:accessFromSubjects(s,[person('chen-ke','viewer'),person('zhao-heng','editor')])},s.meId);s=r.state;const library=r.library;const add=(format,name,parentId='')=>{const r=createContent(s,{format,name,parentId,spaceId:library.id},s.meId);s=r.state;return r.node;};const folder=add('folder','资料'),file=add('doc','授权说明',folder.id),other=add('doc','另一个文件');return {s,library,folder,file,other};}
 const setLocal=(s,id,subjects,excluded=[])=>saveEntityAccess(s,{id,localAccess:accessFromSubjects(s,subjects),inheritedExclusions:excluded},s.meId);
-test('父级更新仅更新继承层，自定义保留且同人按最高权限生效',()=>{
+test('父级更新影响继承层而不改本项存储值，实际权限取高',()=>{
   let {s,library,file}=fixture();s=setLocal(s,file.id,[person('chen-ke','editor')]);
   assert.equal(contentRights(s,file,'chen-ke').edit,false); // The original immutable snapshot is unchanged.
   let current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);
   s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager')])},s.meId);
-  current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').manage,true);assert.equal(contentRights(s,current,'zhao-heng').view,false);assert.equal(current.localAccess.subjects[0].role,'editor');
+  current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,true);assert.equal(contentRights(s,current,'zhao-heng').view,false);assert.equal(current.localAccess.subjects[0].role,'editor');
   s=saveEntityAccess(s,{id:library.id,entity:'space',access:empty(s)},s.meId);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,false);
 });
-test('移除的继承来源不会因父级改档、删除后重加或刷新复活，自定义不受影响',()=>{
-  let {s,library,file}=fixture();s=setLocal(s,file.id,[person('chen-ke','editor')],[{type:'person',id:'chen-ke'},{type:'person',id:'zhao-heng'}]);
-  s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager'),person('zhao-heng','manager')])},s.meId);
-  let current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').manage,false);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'zhao-heng').view,false);
-  s=saveEntityAccess(s,{id:library.id,entity:'space',access:empty(s)},s.meId);s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('zhao-heng','manager')])},s.meId);s=normalizeState(JSON.parse(JSON.stringify(s)));current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'zhao-heng').view,false);assert.equal(current.inheritedExclusions.length,2);
-  s=setLocal(s,file.id,current.localAccess.subjects,[{type:'person',id:'chen-ke'}]);assert.equal(contentRights(s,s.nodes.find(n=>n.id===file.id),'zhao-heng').manage,true);
+test('继承权限不可排除；上级改档保留本项值且实际权限取高',()=>{
+  let {s,library,file}=fixture();s=setLocal(s,file.id,[],[{type:'person',id:'zhao-heng'}]);
+  let current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'zhao-heng').edit,true);
+  s=setLocal(s,file.id,[person('chen-ke','editor')]);
+  s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','viewer'),person('zhao-heng','manager')])},s.meId);
+  current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,false);assert.equal(contentRights(s,current,'zhao-heng').manage,true);
+  s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager')])},s.meId);
+  current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,true);assert.equal(contentRights(s,current,'zhao-heng').view,false);
 });
-test('公司、部门、人员来源分别排除；排除一项不影响其他来源及下级本项授权',()=>{
+test('继承的公司与部门授权不可排除，本项人员授权保持独立',()=>{
   let {s,library,folder,file}=fixture();s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[{type:'company',id:companyId(s),role:'viewer'},{type:'department',id:'product',role:'editor'}])},s.meId);
   s=setLocal(s,folder.id,[],[{type:'company',id:companyId(s)}]);s=setLocal(s,file.id,[person('lin-xia','downloader')]);
-  const current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'zhao-heng').view,false);assert.equal(contentRights(s,current,'lin-xia').download,true);assert.equal(effectiveAccess(s,current).visibility,'members');
+  const current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'zhao-heng').view,true);assert.equal(contentRights(s,current,'lin-xia').download,true);assert.equal(effectiveAccess(s,current).visibility,'public');
   assert.equal(librariesForView(s,'lin-xia','shared').some(l=>l.id===library.id),true);
 });
 test('新增分享只写本项，不把父级快照保存为自定义；相同继承对象可补充本项授权',()=>{
   let {s,file}=fixture();s=addCollaborators(s,{id:file.id,subjects:[person('chen-ke','editor')]},s.meId);const current=s.nodes.find(n=>n.id===file.id),layers=permissionLayers(s,current);
-  assert.deepEqual(layers.local.subjects,[person('chen-ke','editor')]);assert.equal(layers.inherited.subjects.length,2);assert.equal(layers.excluded.length,0);
+  assert.equal(layers.local.subjects[0].id,'chen-ke');assert.equal(layers.local.subjects[0].role,'editor');assert.equal(layers.local.subjects[0].addedBy,s.meId);assert.equal(layers.inherited.subjects.length,2);
   assert.throws(()=>addCollaborators(s,{id:file.id,subjects:[person('chen-ke','viewer')]},s.meId),/已有直接授权/);
 });
 test('权限草稿取消不改状态；父级变动或操作者撤权后提交失败；创建者不可移除',()=>{

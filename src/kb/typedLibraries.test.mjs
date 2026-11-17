@@ -30,19 +30,19 @@ test('仅编辑目录中新建文件，创建人、库创建人和祖先文件�
   assert.equal(contentRights(s,node(s,made.node.id),'zhou-ning').manage,true);
   assert.equal(node(s,made.node.id).inheritedExclusions.length,0);
 });
-test('广场全公司查看不可移除，可加公司编辑并撤销额外授权',()=>{
+test('广场全公司查看不可移除，子项不能排除继承的额外公司授权，撤销需在上级进行',()=>{
   let s=fresh();assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').download,false);
   s=saveEntityAccess(s,{id:'space-plaza',entity:'space',access:accessFromSubjects(s,[{type:'company',id:companyId(s),role:'editor'}])},'zhao-heng');
   assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').edit,true);
   s=saveEntityAccess(s,{id:'doc-plaza',localAccess:accessFromSubjects(s,[]),inheritedExclusions:[{type:'company',id:companyId(s)}]},'zhao-heng');
-  assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').edit,false);
-  s=saveEntityAccess(s,{id:'space-plaza',entity:'space',access:accessFromSubjects(s,[])},'zhao-heng');assert.equal(libraryRights(s,s.spaces.find(l=>l.id==='space-plaza'),'chen-ke').view,true);
+  assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').edit,true);
+  s=saveEntityAccess(s,{id:'space-plaza',entity:'space',access:accessFromSubjects(s,[])},'zhao-heng');assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').edit,false);assert.equal(libraryRights(s,s.spaces.find(l=>l.id==='space-plaza'),'chen-ke').view,true);
 });
-test('普通本项授权保留，继承来源排除不因父级重加而复活',()=>{
-  let s=fresh();s=saveEntityAccess(s,{id:'doc-faq',localAccess:accessFromSubjects(s,[person('chen-ke','viewer')]),inheritedExclusions:[{type:'department',id:'product'}]},s.meId);
+test('上级调高不改本项存储值，实际生效不能低于继承下限',()=>{
+  let s=fresh();s=saveEntityAccess(s,{id:'doc-faq',localAccess:accessFromSubjects(s,[person('chen-ke','viewer')])},s.meId);
   s=saveEntityAccess(s,{id:'space-handbook',entity:'space',access:accessFromSubjects(s,[])},s.meId);
-  s=saveEntityAccess(s,{id:'space-handbook',entity:'space',access:accessFromSubjects(s,[{type:'department',id:'product',role:'manager'}])},s.meId);
-  assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').manage,false);
+  s=saveEntityAccess(s,{id:'space-handbook',entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager')])},s.meId);
+  assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').manage,true);assert.equal(node(s,'doc-faq').localAccess.subjects[0].role,'viewer');
 });
 test('跨库根目录移动保留原 ID、创建人与正文，原个人位置不留副本',()=>{
   const s=fresh(),before=node(s,'doc-note'),r=relocateContent(s,{id:before.id,mode:'move',spaceId:'space-handbook',parentId:'',expectedSpaceId:before.spaceId,expectedParentId:''},s.meId);

@@ -27,15 +27,14 @@ export function didShareItem(state,node,actor){
   if(!node||node.creationDraft||!activeNode(state,node)||!contentRights(state,node,actor).view)return false;
   const library=state.spaces.find(s=>s.id===node.spaceId);if(libraryType(library)==='personal')return false;
   const audience=effectiveAccess(state,node).subjects.some(s=>hasAudience(state,s,actor));if(!audience)return false;
-  let current=node;const seen=new Set(),excluded=new Set();
+  let current=node;const seen=new Set();
   while(current&&!seen.has(current.id)){
     seen.add(current.id);
-    if(hasAttributedGrant(state,current,'node',actor,excluded))return true;
+    if(hasAttributedGrant(state,current,'node',actor))return true;
     const placement=state.sharePlacements?.[current.id];
     if(placement?.actorId===actor&&placement.spaceId===current.spaceId&&placement.parentId===(current.parentId||'')&&effectiveAccess(state,current).subjects.some(s=>hasAudience(state,s,actor)))return true;
-    for(const source of current.inheritedExclusions||[])excluded.add(subjectKey(source));
     current=state.nodes.find(n=>n.id===current.parentId&&n.spaceId===node.spaceId&&n.type==='folder');
   }
-  return hasAttributedGrant(state,library,'space',actor,excluded);
+  return hasAttributedGrant(state,library,'space',actor);
 }
 export function didShareLibrary(state,library,actor){return !!library&&!library.deletedAt&&(hasAttributedGrant(state,library,'space',actor)||state.nodes.some(node=>node.spaceId===library.id&&didShareItem(state,node,actor)));}
