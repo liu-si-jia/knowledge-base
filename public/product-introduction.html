@@ -31,7 +31,7 @@
   <header class="topbar"><div class="topbar-inner"><span class="brand-mark" aria-hidden="true">知</span><span class="brand">企业知识库</span><span class="version">产品架构与权限体系</span><a class="enter" href="./#/home">进入原型 →</a></div></header>
   <main>
     <h1>企业知识库</h1>
-    <p class="lead">统一管理个人资料、团队协作与组织知识。</p>
+    <p class="lead">统一管理个人资料、团队协作与组织知识。当前为模拟数据可点击原型，并非完整业务系统。</p>
     <nav class="anchors" aria-label="产品介绍目录"><a href="#architecture">产品架构</a><a href="#permissions">权限体系</a></nav>
 
     <section id="architecture" aria-labelledby="architecture-title">
@@ -66,11 +66,15 @@
         <div class="permission-part">
           <div class="part-title"><span>01</span><h3>管理者授权，下级默认继承</h3><small>共享库 / 广场</small></div>
           <div class="grant-map" role="group" aria-label="管理者向公司、部门或人员授权，权限从知识库向文件夹、文件继承">
-            <div class="node blue"><b>有管理权限的人</b><small>添加成员、配置权限</small></div><i class="arrow" aria-hidden="true">→</i>
+            <div class="node blue"><b>有管理权限的人</b><small>添加协作者、管理权限</small></div><i class="arrow" aria-hidden="true">→</i>
             <div class="subjects"><span>公司</span><span>部门</span><span>人员</span></div><i class="arrow" aria-hidden="true">→</i>
             <div class="node"><div class="resource-tree"><span>知识库</span><i class="arrow" aria-hidden="true">→</i><span>文件夹</span><i class="arrow" aria-hidden="true">→</i><span>文件</span></div><small>每层都可单独授权</small></div>
           </div>
-          <p class="caption">个人库不能直接加协作者；分享仅面向系统内部，不生成分享链接。</p>
+          <p class="caption">权限管理：添加协作者 → 选择公司 / 部门 / 人员 → 添加协作者确认层 → 确认进入权限草稿 → 保存权限后生效。</p>
+          <p class="caption">确认层默认「可查看并下载」，支持批量「修改权限」和逐行调整；确认层取消不添加，放弃权限草稿不生效。</p>
+          <p class="caption">新增本项显示「由「某某」添加」；修改已有授权保留原添加者，历史添加者未知时显示「本项单独授权」，不虚构记录。</p>
+          <p class="caption">个人库不能直接加协作者；分享仅面向系统内部，不生成分享链接。独立分享弹窗选人后先列入待新增草稿，点击「添加协作者」提交后才生效。</p>
+          <p class="caption">从分享进入权限管理，不会带入分享中未提交的待新增项；返回分享可继续原草稿，保存权限也不会顺带提交这些待新增项。</p>
         </div>
 
         <div class="permission-part">
@@ -81,10 +85,14 @@
             <div class="level"><b>可编辑</b><p>编辑 · 新建 · 上传</p></div><i class="arrow" aria-hidden="true">→</i>
             <div class="level"><b>可管理</b><p>授权 · 移动 · 删除</p></div>
           </div>
-          <div class="merge" role="group" aria-label="普通继承权限扣除已移除来源后，与本项授权合并，取最高档">
-            <div class="node">继承上级权限<small>可移除普通继承来源</small></div><i class="arrow" aria-hidden="true">＋</i><div class="node">本项单独授权<small>父级变化时继续保留</small></div><i class="arrow" aria-hidden="true">→</i><div class="node result"><b>合并后取最高档</b></div>
+          <div class="merge" role="group" aria-label="继承与本项授权分别保存，同一对象及多个授权来源的实际权限取较高档，不能低于继承下限">
+            <div class="node">继承上级权限<small>不可移除、不可下调</small></div><i class="arrow" aria-hidden="true">＋</i><div class="node">本项单独授权<small>上级变更不改写本项值</small></div><i class="arrow" aria-hidden="true">→</i><div class="node result"><b>实际生效取最高档</b></div>
           </div>
+          <p class="caption">继承条目标注「继承自上层目录」，不可移除或下调；上调后形成独立本项授权。本项与继承分开保存，上级变更只更新继承，不改写本项。</p>
           <p class="example">公司仅查看 ＋ 部门可编辑 ＋ 个人仅查看 ＝ <strong>实际可编辑</strong></p>
+          <p class="example">继承可编辑 ＋ 本项可管理；上级后降为仅查看，本项仍为 <strong>可管理</strong>。反之，上级调高时，本项值不变，实际权限仍取高。</p>
+          <p class="caption">同一对象及多个来源的实际权限取较高档，不能用本项低档覆盖继承高档；单行或批量修改也不能低于当前继承下限。</p>
+          <p class="caption">有本项授权时，「移除」仅删除本项并恢复继承，不撤销上级来源；选中纯继承项时不能批量移除。</p>
         </div>
 
         <div class="permission-part">
@@ -93,7 +101,10 @@
             <div class="protected-people"><span>知识库负责人</span><span>本项负责人</span><span>上级文件夹负责人</span></div><i class="arrow" aria-hidden="true">→</i><div class="node blue"><b>受保护的管理权</b><small>不能通过普通授权降权或移除</small></div>
           </div>
           <div class="ownership-note"><span><b>历史创建人</b>：保留创建记录</span><span><b>交接后</b>：原负责人其他授权继续生效</span></div>
-          <p class="caption">广场的全员在线查看底线始终保留；个人库不提供负责人交接。</p>
+          <p class="caption">权限管理列表顶部固定展示负责人的头像、姓名与「负责人」标签；复选框禁用，全选不选中，权限固定「可管理」，不可修改或移除。</p>
+          <p class="caption">有交接权限的人可从当前对象负责人行点击「转交负责人」，接入现有交接流程；有未保存修改时需先保存或取消，交接后新负责人同样受保护。</p>
+          <p class="caption">场景有别：新建个人库隐藏权限配置区，仅用列表外说明「负责人：名字，拥有全部权限」；新建共享 / 广场库的负责人也用外部说明，广场另有「全员查看：组织名，公司成员默认可查看」。</p>
+          <p class="caption">共享 / 广场库设置的权限区与权限管理采用固定负责人行；个人库设置仍仅显示外部负责人说明。广场的全员在线查看底线始终保留；个人库不提供负责人交接。</p>
         </div>
 
         <div class="permission-part">
