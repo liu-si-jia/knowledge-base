@@ -9,7 +9,7 @@ import {
   prepareAddedCollaborators, applyCollaboratorAction, applyBatchCollaboratorAction,
   rowRoleOptions, batchPermissionOptions, classifyCollaborator,
 } from './collaboratorRules.js';
-import { explainPermission, permissionLabel } from './permissionExplanation.js';
+import { explainPermission } from './permissionExplanation.js';
 import { useLocationDialog } from './LocationPicker.jsx';
 import './grants.css';
 
@@ -42,7 +42,6 @@ function BatchRolePicker({label,rows,onChange,allowRemove=true}){
 
 export default function AccessManagerFields({
   state,userId,local,inherited,floor=[],ownerIds=[],protectedRows,onChange,personal=false,
-  responsibleId,onHandover,handoverDisabled=false,handoverTitle='交接负责人',
 }){
   const inheritedSubjects=inherited?.subjects||[];
   const localSubjects=local?.subjects||[];
@@ -90,14 +89,13 @@ export default function AccessManagerFields({
     </div>}
     <div className="grant-list">
       {protections.map(row=>{
-        const subject={type:'person',id:row.id},name=subjectLabel(state,subject),canHandover=!!onHandover&&row.id===responsibleId;
+        const subject={type:'person',id:row.id},name=subjectLabel(state,subject);
         return <div className="grant-row is-owner" key={`owner:${row.id}`}>
           <label className="grant-check"><input type="checkbox" disabled checked={false} aria-label={`${name}（负责人，不可全选）`}/></label>
           <SubjectAvatar state={state} subject={subject}/>
           <div className="grant-subject">
             <b>{name}<span className="grant-owner-tag">负责人</span></b>
           </div>
-          {canHandover&&<button type="button" className="grant-handover" disabled={handoverDisabled} title={handoverTitle} onClick={()=>onHandover()}>转交负责人</button>}
           <span className="grant-fixed-role">可管理</span>
         </div>;
       })}
@@ -108,7 +106,7 @@ export default function AccessManagerFields({
         return <div className="grant-row" key={key}>
           <label className="grant-check"><input type="checkbox" checked={selected.has(key)} aria-label={`选择 ${name}`} onChange={()=>toggle(key)}/></label>
           <SubjectAvatar state={state} subject={subject}/>
-          <div className="grant-subject"><b>{name}</b><small>{caption}</small>{kind==='local'&&<small>本项权限：{permissionLabel(subject.role)}{parent?` · 继承下限：${permissionLabel(parent.role)}`:''} · 实际生效：{permissionLabel(explanation.effectiveRole)}</small>}</div>
+          <div className="grant-subject"><b>{name}</b><small>{caption}</small></div>
           <CollaboratorRolePicker label={`${name}的权限`} kind={kind} role={subject.role} inheritedRole={parent?.role} effectiveRole={explanation.effectiveRole} allowRemove={kind==='local'} onChange={role=>changeRow(subject,role)}/>
         </div>;
       })}

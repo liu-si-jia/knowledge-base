@@ -1,6 +1,5 @@
 import useDiscardGuard from './useDiscardGuard.jsx';
 import { creatorId, responsibleId } from './ownership.js';
-import { handoverReason } from './handover.js';
 import { useRef, useState } from 'react';
 import { X, CaretRight } from '@phosphor-icons/react';
 import { SCOPE_LABELS, accessFingerprint, effectiveAccess, parentAccess, spaceAccess, saveEntityAccess, contentRights, libraryRights, scopeSummary, permissionLayers, protectedManagers, libraryLocalAccess, libraryType, plazaFloor, LIBRARY_TYPES } from './access.js';
@@ -21,7 +20,7 @@ export const AccessFields=GrantFields;
 export function ScopeBadge({access,onClick}){return onClick?<button type="button" className={`scope-badge ${access.visibility}`} onClick={onClick}>{SCOPE_LABELS[access.visibility]}</button>:<span className={`scope-badge ${access.visibility}`}>{SCOPE_LABELS[access.visibility]}</span>;}
 export default function AccessDialog(props){if(!props.item)return <Unavailable onClose={props.onClose}/>;const library=props.entity==='space'?props.item:props.state.spaces.find(space=>space.id===props.item.spaceId);if(!props.settings&&libraryType(library)==='personal')return <Unavailable onClose={props.onClose} message="个人内容仅自己可见，无需配置权限"/>;const rights=props.entity==='space'?libraryRights(props.state,props.item,props.userId):contentRights(props.state,props.item,props.userId);return rights.manage?<EditAccessDialog {...props}/>:<Unavailable onClose={props.onClose} message="当前没有管理权限"/>;}
 function Unavailable({onClose,message='内容已不可用'}){return <div className="action-backdrop"><section className="action-dialog" role="dialog" aria-label="操作不可用"><p>{message}</p><button type="button" onClick={onClose}>关闭</button></section></div>;}
-function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSaved,settings=false,initialDraft,initialLocal,expectedOverride,fromShare=false,onDelete,onHandover}){
+function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSaved,settings=false,initialDraft,initialLocal,expectedOverride,fromShare=false,onDelete}){
   const library=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId),protectedRows=protectedManagers(state,item,entity),ownerIds=protectedRows.map(row=>row.id),layers=entity==='node'?permissionLayers(state,item):null;
   const [draft,setDraft]=useState(()=>initialDraft||libraryLocalAccess(state,library)),[local,setLocal]=useState(()=>initialLocal||layers?.local),[error,setError]=useState('');
   const [name,setName]=useState(item.name),[description,setDescription]=useState(item.description||''),[icon,setIcon]=useState(item.icon||{kind:'preset',key:'book'}),[cover,setCover]=useState(item.cover||{kind:'preset',key:'original'}),[assetReading,setAssetReading]=useState(false),[busy,setBusy]=useState(false);
@@ -36,15 +35,10 @@ function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSave
       onSaved(visibility);onClose();
     }catch(err){await persisted?.rollback().catch(()=>{});await persistedCover?.rollback().catch(()=>{});setError(err.message);}finally{lock.current=false;setBusy(false);}
   };
-  const initialDraftAppearance=useRef(JSON.stringify([item.icon||{kind:'preset',key:'book'},item.cover||{kind:'preset',key:'original'}]));
   const title=settings?'知识库设置':'权限管理';
-  const settingsDirty=name!==item.name||description!==(item.description||'')||JSON.stringify(draft)!==JSON.stringify(libraryLocalAccess(state,library))||!!icon?.file||!!cover?.file||JSON.stringify([icon,cover])!==initialDraftAppearance.current;
   const initialForm=useRef({serialized:JSON.stringify([draft,local,name,description,icon,cover]),iconFile:icon?.file,coverFile:cover?.file});
   const originalPermission=useRef(JSON.stringify([draft,local])),permissionDirty=JSON.stringify([draft,local])!==originalPermission.current;
   const dirty=JSON.stringify([draft,local,name,description,icon,cover])!==initialForm.current.serialized||icon?.file!==initialForm.current.iconFile||cover?.file!==initialForm.current.coverFile;
-  const handoverReasonText=handoverReason(state,item.id,entity,userId);
-  const handoverDisabled=busy||assetReading||(settings?settingsDirty:permissionDirty)||!!handoverReasonText;
-  const handoverTitle=settings&&settingsDirty?'请先保存或取消设置，再交接负责人':!settings&&permissionDirty?'请先保存或取消权限修改，再交接负责人':handoverReasonText||'转交负责人';
   const {requestClose,prompt}=useDiscardGuard(dirty,onClose,busy||assetReading||lock.current);
   useLocationDialog(root,requestClose);
 
@@ -52,8 +46,8 @@ function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSave
     <header><div><h2>{title}</h2><p>{item.name}</p></div><button type="button" className="access-close" aria-label={`关闭${title}`} disabled={busy} onClick={requestClose}><X size={19}/></button></header>
     {settings&&<LibraryMetadata name={name} setName={setName} description={description} setDescription={setDescription} icon={icon} setIcon={setIcon} cover={cover} setCover={setCover} disabled={busy} onLoadingChange={setAssetReading} onEdit={()=>setError('')} legacyTone={['','ice','night','amber'][Math.max(0,state.spaces.findIndex(s=>s.id===item.id))%4]}/>}
     {settings&&<p className="library-kind-readonly">知识库类型：{LIBRARY_TYPES[libraryType(library)]}</p>}
-    {settings&&<div className="library-responsibility"><span>历史创建人：{state.members.find(m=>m.id===creatorId(item))?.name||'未知成员'} · 当前负责人：{state.members.find(m=>m.id===responsibleId(item))?.name||'未知成员'}</span>{libraryType(library)!=='personal'&&onHandover&&<button type="button" disabled={handoverDisabled} title={handoverTitle} onClick={()=>onHandover(item,'space')}>交接负责人</button>}</div>}
-    <fieldset className="permission-edit-fields" disabled={busy}>{libraryType(library)==='personal'?<GrantNotices state={state} ownerIds={ownerIds} protectedRows={protectedRows}/>:<AccessManagerFields state={state} userId={userId} local={entity==='space'?draft:local} inherited={entity==='space'?{subjects:[]}:layers.inherited} floor={entity==='space'?plazaFloor(state,library):layers.floor} ownerIds={ownerIds} protectedRows={protectedRows} personal={libraryType(library)==='personal'} responsibleId={responsibleId(item)} onHandover={onHandover?()=>onHandover(item,entity):undefined} handoverDisabled={handoverDisabled} handoverTitle={handoverTitle} onChange={value=>{if(entity==='space')setDraft(value);else setLocal(value);setError('');}}/>}</fieldset>
+    {settings&&<div className="library-responsibility"><span>历史创建人：{state.members.find(m=>m.id===creatorId(item))?.name||'未知成员'} · 当前负责人：{state.members.find(m=>m.id===responsibleId(item))?.name||'未知成员'}</span></div>}
+    <fieldset className="permission-edit-fields" disabled={busy}>{libraryType(library)==='personal'?<GrantNotices state={state} ownerIds={ownerIds} protectedRows={protectedRows}/>:<AccessManagerFields state={state} userId={userId} local={entity==='space'?draft:local} inherited={entity==='space'?{subjects:[]}:layers.inherited} floor={entity==='space'?plazaFloor(state,library):layers.floor} ownerIds={ownerIds} protectedRows={protectedRows} personal={libraryType(library)==='personal'} onChange={value=>{if(entity==='space')setDraft(value);else setLocal(value);setError('');}}/>}</fieldset>
     {permissionDirty&&(entity==='space'||item.type==='folder')&&<p className="access-note decision-note">保存后下级继承权限随之更新；下级本项权限值保持不变，实际权限取各来源较高档。</p>}
     {error&&<p role="alert" className="access-error">{error}</p>}<footer>{settings&&onDelete&&<button type="button" className="library-delete-button" disabled={busy||assetReading} onClick={()=>onDelete(item)}>删除知识库</button>}<button type="button" disabled={busy} onClick={requestClose}>{fromShare?'返回分享':'取消'}</button><button type="submit" disabled={busy||assetReading}>{busy?'保存中…':settings?'保存设置':'保存权限'}</button></footer>
   </form></div></>;
