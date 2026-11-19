@@ -4,7 +4,7 @@ import { normalizeState, seedState } from './store.js';
 import { createContent } from './contentCreation.js';
 import { createLibrary } from './libraryCreation.js';
 import { accessFromSubjects, companyId } from './permissions.js';
-import { contentRights, libraryRights, librariesForView, saveEntityAccess, deleteContent, restoreContent, restoreNeedsLocation } from './access.js';
+import { contentRights, libraryRights, librariesForView, saveEntityAccess, deleteContent, restoreContent, restoreNeedsLocation, switchNodePermissionMode } from './access.js';
 import { addCollaborators } from './permissionOperations.js';
 import { relocateContent } from './contentOperations.js';
 import { performBatch, sourceLocations } from './fileActions.js';
@@ -23,26 +23,31 @@ test('个人库只准本人访问；拒绝给库或内容添加协作者',()=>{
   assert.throws(()=>addCollaborators(s,{id:'doc-note',subjects:[person('chen-ke','viewer')]},s.meId),/移动/);
   assert.throws(()=>saveEntityAccess(s,{id:'space-personal',entity:'space',access:accessFromSubjects(s,[person('chen-ke','viewer')])},s.meId),/个人知识库/);
 });
-test('仅编辑目录中新建文件，创建人、库创建人和祖先文件夹创建人均受保护',()=>{
+test('新建文件默认继承：本项与知识库负责人受保护，祖先文件夹负责人按可管理继承且自定义后可改',()=>{
   let s=fresh();const made=createContent(s,{spaceId:'space-retro',parentId:'folder-retro',format:'doc',name:'实施说明'},'lin-xia');s=made.state;
   for(const id of ['lin-xia','zhou-ning','zhao-heng'])assert.equal(contentRights(s,node(s,made.node.id),id).manage,true);
-  s=saveEntityAccess(s,{id:made.node.id,localAccess:accessFromSubjects(s,[person('zhou-ning','viewer')]),inheritedExclusions:[{type:'person',id:'zhou-ning'}]},'lin-xia');
-  assert.equal(contentRights(s,node(s,made.node.id),'zhou-ning').manage,true);
+  s=saveEntityAccess(s,{id:made.node.id,permissionMode:'custom',localAccess:accessFromSubjects(s,[person('zhou-ning','viewer')])},'lin-xia');
+  assert.equal(contentRights(s,node(s,made.node.id),'zhou-ning').manage,false);
+  assert.equal(contentRights(s,node(s,made.node.id),'zhou-ning').view,true);
+  assert.equal(contentRights(s,node(s,made.node.id),'zhao-heng').manage,true);
+  assert.equal(contentRights(s,node(s,made.node.id),'lin-xia').manage,true);
   assert.equal(node(s,made.node.id).inheritedExclusions.length,0);
 });
-test('广场全公司查看不可移除，子项不能排除继承的额外公司授权，撤销需在上级进行',()=>{
+test('广场全公司查看底线不可移除；继承子项跟随上级额外公司授权，撤销需在上级进行',()=>{
   let s=fresh();assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').download,false);
   s=saveEntityAccess(s,{id:'space-plaza',entity:'space',access:accessFromSubjects(s,[{type:'company',id:companyId(s),role:'editor'}])},'zhao-heng');
   assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').edit,true);
-  s=saveEntityAccess(s,{id:'doc-plaza',localAccess:accessFromSubjects(s,[]),inheritedExclusions:[{type:'company',id:companyId(s)}]},'zhao-heng');
+  s=saveEntityAccess(s,{id:'doc-plaza',permissionMode:'inherit',localAccess:accessFromSubjects(s,[])},'zhao-heng');
   assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').edit,true);
   s=saveEntityAccess(s,{id:'space-plaza',entity:'space',access:accessFromSubjects(s,[])},'zhao-heng');assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-plaza'),'chen-ke').edit,false);assert.equal(libraryRights(s,s.spaces.find(l=>l.id==='space-plaza'),'chen-ke').view,true);
 });
-test('上级调高不改本项存储值，实际生效不能低于继承下限',()=>{
-  let s=fresh();s=saveEntityAccess(s,{id:'doc-faq',localAccess:accessFromSubjects(s,[person('chen-ke','viewer')])},s.meId);
+test('自定义快照不随父级调高；继承子项才跟随父级当前实际权限',()=>{
+  let s=fresh();s=saveEntityAccess(s,{id:'doc-faq',permissionMode:'custom',localAccess:accessFromSubjects(s,[person('chen-ke','viewer')])},s.meId);
   s=saveEntityAccess(s,{id:'space-handbook',entity:'space',access:accessFromSubjects(s,[])},s.meId);
   s=saveEntityAccess(s,{id:'space-handbook',entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager')])},s.meId);
-  assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').manage,true);assert.equal(node(s,'doc-faq').localAccess.subjects[0].role,'viewer');
+  assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').view,true);assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').manage,false);assert.equal(node(s,'doc-faq').localAccess.subjects[0].role,'viewer');
+  s=saveEntityAccess(s,{id:'doc-faq',permissionMode:'inherit',localAccess:accessFromSubjects(s,[])},s.meId);
+  assert.equal(contentRights(s,node(s,'doc-faq'),'chen-ke').manage,true);
 });
 test('跨库根目录移动保留原 ID、创建人与正文，原个人位置不留副本',()=>{
   const s=fresh(),before=node(s,'doc-note'),r=relocateContent(s,{id:before.id,mode:'move',spaceId:'space-handbook',parentId:'',expectedSpaceId:before.spaceId,expectedParentId:''},s.meId);
@@ -59,9 +64,11 @@ test('仅在线查看者不能通过复制绕过下载限制',()=>{
   const s=fresh();assert.equal(contentRights(s,node(s,'doc-company'),'lin-xia').view,true);assert.equal(contentRights(s,node(s,'doc-company'),'lin-xia').download,false);
   assert.throws(()=>relocateContent(s,{id:'doc-company',mode:'copy',spaceId:'space-handbook',parentId:''},'lin-xia'),/下载/);
 });
-test('移动清除普通授权及排除；原祖先保护结束、目标祖先保护开始，创建人保护保留',()=>{
+test('移动后改回继承并清空普通授权，目标位置的知识库负责人与本项负责人生效',()=>{
   let s=fresh();const made=createContent(s,{spaceId:'space-retro',parentId:'folder-retro',format:'doc',name:'移动权限说明'},'lin-xia');s=made.state;
-  s=saveEntityAccess(s,{id:made.node.id,localAccess:accessFromSubjects(s,[person('chen-ke','editor')]),inheritedExclusions:[{type:'department',id:'delivery'}]},'lin-xia');
+  const switched=switchNodePermissionMode(s,node(s,made.node.id),'custom','lin-xia');
+  s=saveEntityAccess(s,{id:made.node.id,permissionMode:switched.permissionMode,localAccess:switched.localAccess,convertedBy:switched.convertedBy},'lin-xia');
+  s=saveEntityAccess(s,{id:made.node.id,permissionMode:'custom',localAccess:accessFromSubjects(s,[...s.nodes.find(n=>n.id===made.node.id).localAccess.subjects,person('chen-ke','editor')]),convertedBy:'lin-xia'},'lin-xia');
   const r=relocateContent(s,{id:made.node.id,mode:'move',spaceId:'space-company-share',parentId:''},s.meId);
   assert.equal(r.node.localAccess.subjects.length,0);assert.equal(r.node.inheritedExclusions.length,0);
   assert.equal(contentRights(r.state,r.node,'zhou-ning').edit,true);assert.equal(contentRights(r.state,r.node,'zhou-ning').manage,false);

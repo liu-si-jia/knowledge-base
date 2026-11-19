@@ -4,7 +4,7 @@ import { seedState } from './store.js';
 import { createLibrary } from './libraryCreation.js';
 import { createContent, renameContent } from './contentCreation.js';
 import { accessFromSubjects, companyId } from './permissions.js';
-import { accessFingerprint, contentRights, saveEntityAccess, restoreContent } from './access.js';
+import { accessFingerprint, contentRights, saveEntityAccess, restoreContent, switchNodePermissionMode } from './access.js';
 import { addCollaborators, savePermissionDetails } from './permissionOperations.js';
 import { favorites, setFavorite, actionReason, batchPreflight, performBatch, sourceLocations } from './fileActions.js';
 import { buildDownload, downloadPlan } from './bundles.js';
@@ -17,19 +17,30 @@ function fixture(){
   const rLib=r.library,a=add('doc','甲'),b=add('doc','乙'),folder=add('folder','目录'),child=add('doc','子文档',folder.id),target=add('folder','目标');
   return {s,lib:rLib,a,b,folder,child,target};
 }
-test('增量分享只增本项授权，不再冻结上级；父级撤权仅影响继承部分',()=>{
-  let {s,lib,a}=fixture();const before=structuredClone(s),expected=accessFingerprint(s,a,'node'),args={id:a.id,subjects:[person('zhao-heng','editor')],expected};
-  s=addCollaborators(s,args,s.meId);const item=s.nodes.find(n=>n.id===a.id);assert.equal(item.permissionMode,'layered');assert.equal(item.localAccess.subjects.length,1);assert.equal(contentRights(s,item,'chen-ke').manage,true);assert.equal(contentRights(s,item,'zhao-heng').edit,true);assert.deepEqual(before.nodes.find(n=>n.id===a.id).localAccess.subjects,[]);
+const toCustom=(s,id,userId)=>{const node=s.nodes.find(n=>n.id===id),result=switchNodePermissionMode(s,node,'custom',userId);return saveEntityAccess(s,{id,permissionMode:result.permissionMode,localAccess:result.localAccess,convertedBy:result.convertedBy},userId);};
+test('继承模式不能直接加人；转自定义后快照含当时父级授权，父级再改不影响快照',()=>{
+  let {s,lib,a}=fixture();const before=structuredClone(s);
+  assert.throws(()=>addCollaborators(s,{id:a.id,subjects:[person('zhao-heng','editor')]},s.meId),/转为自定义/);
+  s=toCustom(s,a.id,s.meId);
+  s=addCollaborators(s,{id:a.id,subjects:[person('zhao-heng','editor')]},s.meId);
+  const item=s.nodes.find(n=>n.id===a.id);
+  assert.equal(item.permissionMode,'custom');
+  assert.ok(item.localAccess.subjects.some(row=>row.id==='zhao-heng'&&row.role==='editor'));
+  assert.ok(item.localAccess.subjects.some(row=>row.id==='chen-ke'&&row.role==='manager'));
+  assert.deepEqual(before.nodes.find(n=>n.id===a.id).localAccess.subjects,[]);
   assert.throws(()=>addCollaborators(s,{id:a.id,subjects:[person('zhao-heng','viewer')]},s.meId),/已有直接授权/);
-  s=saveEntityAccess(s,{id:lib.id,entity:'space',access:accessFromSubjects(s,[])},s.meId);assert.equal(contentRights(s,item,'chen-ke').manage,false);assert.equal(contentRights(s,item,'zhao-heng').edit,true);
+  s=saveEntityAccess(s,{id:lib.id,entity:'space',access:accessFromSubjects(s,[])},s.meId);
+  assert.equal(contentRights(s,item,'chen-ke').manage,true);
+  assert.equal(contentRights(s,item,'zhao-heng').edit,true);
 });
-test('新增不同对象的本项授权不影响已继承来源，也不改写独立子项',()=>{
+test('自定义父级新增对象不影响已经自定义的子项快照',()=>{
   let {s,lib,folder,child}=fixture();s=saveEntityAccess(s,{id:lib.id,entity:'space',access:accessFromSubjects(s,[{type:'company',id:companyId(s),role:'viewer'},{type:'department',id:'product',role:'editor'}])},s.meId);
-  s=saveEntityAccess(s,{id:child.id,access:accessFromSubjects(s,[]),inherit:false},s.meId);
+  s=toCustom(s,child.id,s.meId);
   const original=structuredClone(s.nodes.find(n=>n.id===child.id));
-  s=addCollaborators(s,{id:folder.id,subjects:[person('chen-ke','viewer')],confirmedIndependent:true},s.meId);
+  s=toCustom(s,folder.id,s.meId);
+  s=addCollaborators(s,{id:folder.id,subjects:[person('chen-ke','viewer')]},s.meId);
   assert.equal(contentRights(s,s.nodes.find(n=>n.id===folder.id),'chen-ke').edit,true);assert.deepEqual(s.nodes.find(n=>n.id===child.id),original);
-  assert.throws(()=>addCollaborators(s,{id:folder.id,subjects:[{type:'department',id:'product',role:'viewer'}],confirmedIndependent:true},s.meId),/继承授权/);
+  assert.throws(()=>addCollaborators(s,{id:folder.id,subjects:[{type:'department',id:'product',role:'viewer'}]},s.meId),/已有直接授权/);
 });
 test('新增授权提交前撤权或变更授权会阻止，原状态完全不变',()=>{
   const {s,a}=fixture(),expected=accessFingerprint(s,a,'node');s.spaces.at(-1).access=accessFromSubjects(s,[]);const before=structuredClone(s);
@@ -53,11 +64,11 @@ test('批量移动重名整批阻止；复制自动唯一；原状态及缓存�
   let result=performBatch(s,{ids:[a.id,b.id],spaceId:lib.id,action:'copy',parentId:''},s.meId);const again=performBatch(result.state,{ids:[a.id,b.id],spaceId:lib.id,action:'copy',parentId:''},s.meId);
   const siblings=again.state.nodes.filter(n=>n.spaceId===lib.id&&!n.parentId);assert.equal(new Set(siblings.map(n=>n.name)).size,siblings.length);assert.deepEqual(result.nodes[0].versions,[{body:'历史'}]);assert.deepEqual(s,before);
 });
-test('本项较低权限不能削弱后代继承权限，提交前仍重新检查上级撤权',()=>{
+test('继承子项跟随父级可管理，提交前仍重新检查上级撤权',()=>{
   let {s,lib,a,folder,child,target}=fixture();
   s.spaces.at(-1).access=accessFromSubjects(s,[person('chen-ke','editor')]);
-  s.nodes.find(n=>n.id===folder.id).localAccess=accessFromSubjects(s,[person('chen-ke','manager')]);
-  s.nodes.find(n=>n.id===child.id).localAccess=accessFromSubjects(s,[person('chen-ke','viewer')]);
+  const folderNode=s.nodes.find(n=>n.id===folder.id);folderNode.permissionMode='custom';folderNode.localAccess=accessFromSubjects(s,[person('chen-ke','manager')]);
+  const childNode=s.nodes.find(n=>n.id===child.id);childNode.permissionMode='inherit';childNode.localAccess=accessFromSubjects(s,[]);
   assert.equal(contentRights(s,s.nodes.find(n=>n.id===child.id),'chen-ke').manage,true);
   assert.equal(actionReason(s,s.nodes.find(n=>n.id===folder.id),'chen-ke','delete'),'');
   s.spaces.at(-1).access=accessFromSubjects(s,[person('chen-ke','viewer')]);
@@ -75,7 +86,7 @@ test('批量删除恢复不复活早先独立删除的项目',()=>{
 });
 test('各项分别有目标但整批没有共同可编辑位置时禁用',()=>{
   const {s,lib,folder,target}=fixture();s.spaces=s.spaces.filter(space=>space.id===lib.id);s.nodes=s.nodes.filter(node=>node.spaceId===lib.id);s.spaces.at(-1).access=accessFromSubjects(s,[person('chen-ke','viewer')]);
-  for(const node of [folder,target]){node.localAccess=accessFromSubjects(s,[person('chen-ke','manager')]);}
+  for(const node of [folder,target]){const current=s.nodes.find(n=>n.id===node.id);current.permissionMode='custom';current.localAccess=accessFromSubjects(s,[person('chen-ke','manager')]);}
   assert.equal(actionReason(s,folder,'chen-ke','copy'),'');assert.equal(actionReason(s,target,'chen-ke','copy'),'');
   assert.throws(()=>batchPreflight(s,{ids:[folder.id,target.id],spaceId:lib.id,action:'copy'},'chen-ke'),/整批/);
 });

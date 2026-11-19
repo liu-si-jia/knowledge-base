@@ -24,7 +24,7 @@ export async function authorizedBlob(id,action='view'){
 }
 export function prepareUploadedNode(state,file,fields,userId,blobId,body=''){
   validateDestination(state,fields,userId);const time=new Date().toISOString();
-  return {id:crypto.randomUUID(),spaceId:fields.spaceId,parentId:fields.parentId||'',type:'doc',format:'file',name:uniqueContentName(state,fields.spaceId,fields.parentId,file.name,true),fileName:file.name,size:file.size,mime:file.type||'',blobId,body,ownerId:userId,creatorId:userId,responsibleId:userId,ownership:state.spaces.find(s=>s.id===fields.spaceId)?.kind==='personal'?'personal':'organization',inherit:true,permissionMode:'layered',localAccess:{subjects:[],visibility:'private',grants:{}},inheritedExclusions:[],members:[],createdAt:time,updatedAt:time,deletedAt:'',favorite:false};
+  return {id:crypto.randomUUID(),spaceId:fields.spaceId,parentId:fields.parentId||'',type:'doc',format:'file',name:uniqueContentName(state,fields.spaceId,fields.parentId,file.name,true),fileName:file.name,size:file.size,mime:file.type||'',blobId,body,ownerId:userId,creatorId:userId,responsibleId:userId,ownership:state.spaces.find(s=>s.id===fields.spaceId)?.kind==='personal'?'personal':'organization',inherit:true,permissionMode:'inherit',localAccess:{subjects:[],visibility:'private',grants:{}},inheritedExclusions:[],members:[],createdAt:time,updatedAt:time,deletedAt:'',favorite:false};
 }
 export async function persistUpload(file,fields,userId,update,{cancelled=()=>false,onProgress=()=>{}}={}){
   if(file.size>MAX_FILE_SIZE)throw Error('单个文件不能超过 50 MB');

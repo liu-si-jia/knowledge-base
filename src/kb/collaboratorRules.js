@@ -15,8 +15,15 @@ export function addedByCaption(state,addedBy){
   return name?`由「${name}」添加`:'本项单独授权';
 }
 
-export function collaboratorCaption(state,subject,{inheritedOnly=false}={}){
-  return inheritedOnly?'继承自上层目录':addedByCaption(state,subject?.addedBy);
+export const MODE_SWITCH_COPY={
+  custom:{title:'转为自定义权限',body:'转为自定义后，将把当前从父级继承下来的普通权限快照留在本项。之后父级再改权限，不再影响本项。取消则不切换。'},
+  inherit:{title:'改回继承权限',body:'改回继承后，本项自定义的添加和修改会全部失效，并重新跟随父级当前的实际权限。取消则不切换。'},
+};
+
+export function collaboratorCaption(state,subject,{mode}={}){
+  if(mode==='inherit')return '继承权限';
+  const name=state?.members?.find(m=>m.id===subject?.addedBy)?.name;
+  return name?`自定义权限：由「${name}」添加`:'本项单独授权';
 }
 
 export function subjectCounts(subjects=[]){
@@ -40,55 +47,44 @@ export function classifyCollaborator(key,localKeys,inheritedKeys){
   return 'local';
 }
 
-export function rowRoleOptions(kind,currentRole,inheritedRole){
+export function rowRoleOptions(kind,currentRole,inheritedRole,mode='custom'){
   return PERMISSION_ROLES.map(([value,label])=>({
     value,label,
-    disabled:roleRank(value)<roleRank(inheritedRole||(kind==='inherited'?currentRole:undefined)),
+    disabled:mode==='inherit'||kind==='inherited',
   }));
 }
 
-export function batchPermissionOptions(rows=[]){
-  const hasInherited=rows.some(row=>row.kind==='inherited');
-  const options=PERMISSION_ROLES.map(([value,label])=>({
-    value,label,
-    disabled:rows.some(row=>roleRank(value)<roleRank(row.inheritedRole||(row.kind==='inherited'?row.role:undefined)))||hasInherited&&rows.some(row=>roleRank(value)<roleRank(row.role)),
-  }));
-  return {options,canRemove:!hasInherited&&rows.length>0&&rows.every(row=>row.kind==='local')};
+export function batchPermissionOptions(rows=[],mode='custom'){
+  const inherited=mode==='inherit'||rows.some(row=>row.kind==='inherited');
+  const options=PERMISSION_ROLES.map(([value,label])=>({value,label,disabled:inherited}));
+  return {options,canRemove:!inherited&&rows.length>0};
 }
 
-export function applyCollaboratorAction(state,{localSubjects,inheritedSubjects},subject,action,userId){
+export function applyCollaboratorAction(state,{localSubjects,inheritedSubjects=[],mode='custom'},subject,action,userId){
+  if(mode==='inherit')return {error:'继承模式不能修改继承权限，请先转为自定义',localSubjects};
   const key=subjectKey(subject);
-  const inheritedRow=inheritedSubjects.find(s=>subjectKey(s)===key);
   const localRow=localSubjects.find(s=>subjectKey(s)===key);
-  const kind=localRow?'local':inheritedRow?'inherited':'local';
   if(action==='remove'){
-    if(kind!=='local')return {error:'继承权限不能移除',localSubjects};
+    if(!localRow)return {error:'继承权限不能在继承模式中移除，请先转为自定义',localSubjects};
     return {localSubjects:localSubjects.filter(s=>subjectKey(s)!==key)};
   }
   if(!isKnownRole(action))return {error:'请选择有效权限',localSubjects};
-  const current=localRow?.role||inheritedRow?.role;
-  if(inheritedRow&&roleRank(action)<roleRank(inheritedRow.role))return {error:'不能下调至继承权限下限以下',localSubjects};
-  if(kind==='inherited'&&roleRank(action)===roleRank(current))return {localSubjects};
   return {localSubjects:[...localSubjects.filter(s=>subjectKey(s)!==key),localRow?{...localRow,role:action}:withAddedBy({type:subject.type,id:subject.id,role:action},userId)]};
 }
 
-export function applyBatchCollaboratorAction(state,{localSubjects,inheritedSubjects},keys,action,userId){
+export function applyBatchCollaboratorAction(state,{localSubjects,inheritedSubjects=[],mode='custom'},keys,action,userId){
+  if(mode==='inherit')return {error:'继承模式不能修改继承权限，请先转为自定义',localSubjects};
   const keySet=new Set(keys),unique=[];
   for(const key of keySet){
-    const localRow=localSubjects.find(s=>subjectKey(s)===key),inheritedRow=inheritedSubjects.find(s=>subjectKey(s)===key),subject=localRow||inheritedRow;
-    if(subject)unique.push({subject,kind:localRow?'local':'inherited',role:subject.role,inheritedRole:inheritedRow?.role});
+    const subject=localSubjects.find(s=>subjectKey(s)===key);
+    if(subject)unique.push(subject);
   }
   if(!unique.length)return {error:'请选择要修改的协作者',localSubjects};
-  const {options,canRemove}=batchPermissionOptions(unique);
-  if(action==='remove'){
-    if(!canRemove)return {error:'包含继承项时不能批量移除',localSubjects};
-    return {localSubjects:localSubjects.filter(s=>!keySet.has(subjectKey(s)))};
-  }
-  if(options.find(option=>option.value===action)?.disabled)return {error:'包含继承项时批量只能上调，不能下调',localSubjects};
+  if(action==='remove')return {localSubjects:localSubjects.filter(s=>!keySet.has(subjectKey(s)))};
   if(!isKnownRole(action))return {error:'请选择有效权限',localSubjects};
   let next=localSubjects;
-  for(const row of unique){
-    const result=applyCollaboratorAction(state,{localSubjects:next,inheritedSubjects},row.subject,action,userId);
+  for(const subject of unique){
+    const result=applyCollaboratorAction(state,{localSubjects:next,mode},subject,action,userId);
     if(result.error)return result;
     next=result.localSubjects;
   }
@@ -117,7 +113,6 @@ export function rejectNonElevatingInherited(additions,inheritedSubjects){
 export function validateLocalEdits(subjects,previous,inherited,userId){
   return subjects.map(subject=>{
     const key=subjectKey(subject),prior=previous.find(s=>subjectKey(s)===key),parent=inherited.find(s=>subjectKey(s)===key);
-    if(parent&&(!prior||prior.role!==subject.role)&&roleRank(subject.role)<roleRank(parent.role))throw Error('本项权限不能低于当前继承权限下限');
     const {addedBy:ignored,...clean}=subject;
     return {...clean,...(prior?(prior.addedBy?{addedBy:prior.addedBy}:{}):userId?{addedBy:userId}:{})};
   });

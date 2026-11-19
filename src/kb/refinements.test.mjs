@@ -4,49 +4,78 @@ import { seedState, normalizeState } from './store.js';
 import { createLibrary } from './libraryCreation.js';
 import { createContent } from './contentCreation.js';
 import { accessFromSubjects, companyId } from './permissions.js';
-import { contentRights, effectiveAccess, accessFingerprint, saveEntityAccess, permissionLayers, migrateAccess, librariesForView } from './access.js';
+import { contentRights, effectiveAccess, accessFingerprint, saveEntityAccess, permissionLayers, migrateAccess, librariesForView, switchNodePermissionMode } from './access.js';
 import { addCollaborators, savePermissionDetails } from './permissionOperations.js';
 import { pinnedRecords, visiblePins, pinnedLibrariesForView, togglePin, reorderPin, reorderViewPin, recentVisits, visitContent, homeEntries } from './personalization.js';
 const person=(id,role)=>({type:'person',id,role}),empty=state=>accessFromSubjects(state,[]);
 function fixture(){let s=normalizeState(seedState());let r=createLibrary(s,{name:'分层授权验收',initializer:'shared',access:accessFromSubjects(s,[person('chen-ke','viewer'),person('zhao-heng','editor')])},s.meId);s=r.state;const library=r.library;const add=(format,name,parentId='')=>{const r=createContent(s,{format,name,parentId,spaceId:library.id},s.meId);s=r.state;return r.node;};const folder=add('folder','资料'),file=add('doc','授权说明',folder.id),other=add('doc','另一个文件');return {s,library,folder,file,other};}
-const setLocal=(s,id,subjects,excluded=[])=>saveEntityAccess(s,{id,localAccess:accessFromSubjects(s,subjects),inheritedExclusions:excluded},s.meId);
-test('父级更新影响继承层而不改本项存储值，实际权限取高',()=>{
-  let {s,library,file}=fixture();s=setLocal(s,file.id,[person('chen-ke','editor')]);
-  assert.equal(contentRights(s,file,'chen-ke').edit,false); // The original immutable snapshot is unchanged.
-  let current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);
+const setLocal=(s,id,subjects)=>saveEntityAccess(s,{id,permissionMode:subjects.length?'custom':'inherit',localAccess:accessFromSubjects(s,subjects),convertedBy:subjects.length?s.meId:undefined},s.meId);
+const toCustom=(s,id)=>{const node=s.nodes.find(n=>n.id===id),result=switchNodePermissionMode(s,node,'custom',s.meId);return saveEntityAccess(s,{id,permissionMode:result.permissionMode,localAccess:result.localAccess,convertedBy:result.convertedBy},s.meId);};
+
+test('继承子项跟随父级当前实际权限，自定义快照不受父级后改影响',()=>{
+  let {s,library,file}=fixture();
+  assert.equal(contentRights(s,file,'chen-ke').view,true);
+  assert.equal(contentRights(s,file,'zhao-heng').edit,true);
   s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager')])},s.meId);
-  current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,true);assert.equal(contentRights(s,current,'zhao-heng').view,false);assert.equal(current.localAccess.subjects[0].role,'editor');
-  s=saveEntityAccess(s,{id:library.id,entity:'space',access:empty(s)},s.meId);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,false);
-});
-test('继承权限不可排除；上级改档保留本项值且实际权限取高',()=>{
-  let {s,library,file}=fixture();s=setLocal(s,file.id,[],[{type:'person',id:'zhao-heng'}]);
-  let current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'zhao-heng').edit,true);
+  assert.equal(contentRights(s,s.nodes.find(n=>n.id===file.id),'chen-ke').manage,true);
   s=setLocal(s,file.id,[person('chen-ke','editor')]);
-  s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','viewer'),person('zhao-heng','manager')])},s.meId);
-  current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,false);assert.equal(contentRights(s,current,'zhao-heng').manage,true);
-  s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager')])},s.meId);
-  current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'chen-ke').manage,true);assert.equal(contentRights(s,current,'zhao-heng').view,false);
+  let current=s.nodes.find(n=>n.id===file.id);
+  assert.equal(current.permissionMode,'custom');
+  assert.equal(contentRights(s,current,'chen-ke').edit,true);
+  s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('chen-ke','manager'),person('zhao-heng','editor')])},s.meId);
+  current=s.nodes.find(n=>n.id===file.id);
+  assert.equal(contentRights(s,current,'chen-ke').manage,false);
+  assert.equal(contentRights(s,current,'chen-ke').edit,true);
+  assert.equal(contentRights(s,current,'zhao-heng').view,false);
+  assert.equal(current.localAccess.subjects[0].role,'editor');
 });
-test('继承的公司与部门授权不可排除，本项人员授权保持独立',()=>{
+test('改回继承后自定义修改失效，并重新跟随父级当前权限',()=>{
+  let {s,library,file}=fixture();
+  s=setLocal(s,file.id,[person('chen-ke','editor')]);
+  s=saveEntityAccess(s,{id:library.id,entity:'space',access:empty(s)},s.meId);
+  let current=s.nodes.find(n=>n.id===file.id);
+  assert.equal(contentRights(s,current,'chen-ke').edit,true);
+  s=saveEntityAccess(s,{id:file.id,permissionMode:'inherit',localAccess:empty(s)},s.meId);
+  current=s.nodes.find(n=>n.id===file.id);
+  assert.equal(current.permissionMode,'inherit');
+  assert.equal(contentRights(s,current,'chen-ke').view,false);
+  assert.equal(contentRights(s,current,'zhao-heng').edit,false);
+});
+test('继承模式下公司与部门授权随父级生效，转自定义后可再单独加人',()=>{
   let {s,library,folder,file}=fixture();s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[{type:'company',id:companyId(s),role:'viewer'},{type:'department',id:'product',role:'editor'}])},s.meId);
-  s=setLocal(s,folder.id,[],[{type:'company',id:companyId(s)}]);s=setLocal(s,file.id,[person('lin-xia','downloader')]);
+  s=setLocal(s,folder.id,[]);
+  assert.equal(s.nodes.find(n=>n.id===folder.id).permissionMode,'inherit');
+  s=toCustom(s,file.id);
+  s=addCollaborators(s,{id:file.id,subjects:[person('lin-xia','downloader')]},s.meId);
   const current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'zhao-heng').view,true);assert.equal(contentRights(s,current,'lin-xia').download,true);assert.equal(effectiveAccess(s,current).visibility,'public');
   assert.equal(librariesForView(s,'lin-xia','shared').some(l=>l.id===library.id),true);
 });
-test('新增分享只写本项，不把父级快照保存为自定义；相同继承对象可补充本项授权',()=>{
-  let {s,file}=fixture();s=addCollaborators(s,{id:file.id,subjects:[person('chen-ke','editor')]},s.meId);const current=s.nodes.find(n=>n.id===file.id),layers=permissionLayers(s,current);
-  assert.equal(layers.local.subjects[0].id,'chen-ke');assert.equal(layers.local.subjects[0].role,'editor');assert.equal(layers.local.subjects[0].addedBy,s.meId);assert.equal(layers.inherited.subjects.length,2);
+test('继承模式不能通过分享加人；转为自定义后可添加尚未在快照中的对象',()=>{
+  let {s,file}=fixture();
+  assert.throws(()=>addCollaborators(s,{id:file.id,subjects:[person('chen-ke','editor')]},s.meId),/转为自定义/);
+  s=toCustom(s,file.id);
+  s=addCollaborators(s,{id:file.id,subjects:[person('lin-xia','downloader')]},s.meId);
+  const current=s.nodes.find(n=>n.id===file.id),layers=permissionLayers(s,current);
+  assert.equal(current.permissionMode,'custom');
+  assert.equal(layers.local.subjects.find(row=>row.id==='lin-xia').role,'downloader');
+  assert.equal(layers.local.subjects.find(row=>row.id==='lin-xia').addedBy,s.meId);
+  assert.equal(layers.local.subjects.find(row=>row.id==='chen-ke').role,'viewer');
   assert.throws(()=>addCollaborators(s,{id:file.id,subjects:[person('chen-ke','viewer')]},s.meId),/已有直接授权/);
 });
-test('权限草稿取消不改状态；父级变动或操作者撤权后提交失败；创建者不可移除',()=>{
+test('权限草稿取消不改状态；父级变动或操作者撤权后提交失败；负责人不可移除',()=>{
   let {s,library,file}=fixture();const before=structuredClone(s),draft=permissionLayers(s,file);draft.excluded=[{type:'person',id:'chen-ke'}];draft.local.subjects.push(person('lin-xia','viewer'));assert.deepEqual(s,before);
   const expected=accessFingerprint(s,file,'node');s=saveEntityAccess(s,{id:library.id,entity:'space',access:empty(s)},s.meId);
   assert.throws(()=>saveEntityAccess(s,{id:file.id,localAccess:empty(s),expected},s.meId),/已变化/);assert.throws(()=>saveEntityAccess(s,{id:file.id,localAccess:empty(s)},'chen-ke'),/管理权限/);
-  s=setLocal(s,file.id,[person(s.meId,'viewer')],[{type:'person',id:s.meId}]);const current=s.nodes.find(n=>n.id===file.id);assert.equal(current.localAccess.subjects.length,0);assert.equal(current.inheritedExclusions.length,0);assert.equal(contentRights(s,current,s.meId).manage,true);
+  s=setLocal(s,file.id,[person(s.meId,'viewer')]);const current=s.nodes.find(n=>n.id===file.id);assert.equal(current.localAccess.subjects.length,0);assert.equal(current.inheritedExclusions.length,0);assert.equal(contentRights(s,current,s.meId).manage,true);
 });
-test('缓存迁移保留显式自定义，保留当前本项授权而不导入旧继承快照，不改原数据且幂等',()=>{
+test('缓存迁移把旧本项授权收敛为含当时父级实际权限的自定义快照，不改原数据且幂等',()=>{
   const s=seedState();s.accessModelVersion=1;s.nodes[0].access=accessFromSubjects(s,[person('lin-xia','manager')]);s.nodes[1].localAccess=accessFromSubjects(s,[person('zhao-heng','editor')]);s.nodes[1].versions=[{body:'历史'}];s.nodes[1].blobId='original';const before=structuredClone(s),next=migrateAccess(s);
-  assert.deepEqual(s,before);assert.equal(next.nodes[0].localAccess.subjects.length,0);assert.deepEqual(next.nodes[1].localAccess.subjects,[person('zhao-heng','editor')]);assert.deepEqual(next.nodes[1].versions,before.nodes[1].versions);assert.equal(next.nodes[1].blobId,'original');assert.deepEqual(migrateAccess(next),next);
+  assert.deepEqual(s,before);assert.equal(next.nodes[0].permissionMode,'inherit');assert.equal(next.nodes[0].localAccess.subjects.length,0);
+  assert.equal(next.nodes[1].permissionMode,'custom');
+  assert.equal(next.nodes[1].localAccess.subjects.find(row=>row.id==='zhao-heng').role,'editor');
+  assert.ok(next.nodes[1].localAccess.subjects.some(row=>row.type==='department'&&row.id==='product'));
+  assert.ok(next.nodes[1].localAccess.subjects.some(row=>row.id==='lin-xia'&&row.role==='downloader'));
+  assert.deepEqual(next.nodes[1].versions,before.nodes[1].versions);assert.equal(next.nodes[1].blobId,'original');assert.deepEqual(migrateAccess(next),next);
 });
 test('置顶主用户初始四项、跨入口去重、取消后不自动补齐，排序按用户刷新保留',()=>{
   let {s,library}=fixture();const initial=pinnedRecords(s,s.meId);assert.equal(initial.length,4);assert.deepEqual(pinnedRecords(s,'chen-ke'),[]);

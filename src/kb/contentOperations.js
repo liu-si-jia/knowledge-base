@@ -37,7 +37,7 @@ export function relocateContent(state,{id,mode,spaceId,parentId='',name,expected
   const targetName=mode==='copy'?validateContentName(name||duplicateName(state,node,parentId,spaceId)):node.name;
   const extension=uploadedExtension(node);if(mode==='copy'&&extension&&!targetName.toLocaleLowerCase().endsWith(extension.toLocaleLowerCase()))throw Error(`请保留原文件扩展名 ${extension}`);
   if(state.nodes.some(n=>!n.deletedAt&&n.spaceId===spaceId&&(n.parentId||'')===parentId&&n.name.trim().toLocaleLowerCase()===targetName.toLocaleLowerCase()))throw Error(mode==='copy'?'目标目录已有同名内容，请修改副本名称':'目标目录已有同名内容，请选择其他目录或先重命名原内容');
-  const time=new Date().toISOString(),reset={inherit:true,permissionMode:'layered',localAccess:{subjects:[],visibility:'private',grants:{}},inheritedExclusions:[],access:undefined,acl:undefined,members:[],updatedAt:time};
+  const time=new Date().toISOString(),reset={inherit:true,permissionMode:'inherit',convertedBy:undefined,localAccess:{subjects:[],visibility:'private',grants:{}},inheritedExclusions:[],access:undefined,acl:undefined,members:[],updatedAt:time};
   if(mode==='move'){
     const moving=new Set(items.map(n=>n.id));const nodes=state.nodes.map(n=>moving.has(n.id)?{...n,...reset,spaceId,ownership:libraryType(state.spaces.find(s=>s.id===spaceId))==='personal'?'personal':'organization',...(n.id===id?{parentId}:{})}:n);
     const shareAttribution={...state.shareAttribution},sharePlacements={...state.sharePlacements};for(const movedId of moving){delete shareAttribution[`node:${movedId}`];delete sharePlacements[movedId];}

@@ -29,9 +29,12 @@ test('删除前再核权限和内容快照，失败不部分写入',()=>{
   const snapshot=libraryDeletionSnapshot(s,'space-handbook');s=createContent(s,{spaceId:'space-handbook',format:'doc'},s.meId).state;
   const before=structuredClone(s);assert.throws(()=>deleteLibrary(s,'space-handbook',s.meId,snapshot),/已变化/);assert.deepEqual(s,before);
 });
-test('子项不能用本项低档削弱继承管理权，整库删除仍按实际权限校验',()=>{
+test('继承子项跟随库级可管理，自定义降权后不再保留该管理权，整库删除按实际权限校验',()=>{
   let s=fresh();s=saveEntityAccess(s,{id:'space-handbook',entity:'space',access:accessFromSubjects(s,[{type:'person',id:'lin-xia',role:'manager'}])},s.meId);
-  assert.throws(()=>saveEntityAccess(s,{id:'doc-faq',localAccess:accessFromSubjects(s,[{type:'person',id:'lin-xia',role:'viewer'}])},s.meId),/继承权限下限/);
+  assert.equal(contentRights(s,get(s,'doc-faq'),'lin-xia').manage,true);
+  s=saveEntityAccess(s,{id:'doc-faq',permissionMode:'custom',localAccess:accessFromSubjects(s,[{type:'person',id:'lin-xia',role:'viewer'}])},s.meId);
+  assert.equal(contentRights(s,get(s,'doc-faq'),'lin-xia').manage,false);
+  s=saveEntityAccess(s,{id:'doc-faq',permissionMode:'inherit',localAccess:accessFromSubjects(s,[])},s.meId);
   assert.equal(contentRights(s,get(s,'doc-faq'),'lin-xia').manage,true);
   assert.doesNotThrow(()=>deleteLibrary(s,'space-handbook','lin-xia'));
 });

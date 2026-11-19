@@ -33,8 +33,8 @@ test('existing grants, custom fields, folders and deleted records survive normal
   const normalized=normalizeState(state);
   assert.deepEqual(normalized.internalShares,state.internalShares);
   for(const [index,node] of state.nodes.entries())for(const [key,value] of Object.entries(node))assert.deepEqual(normalized.nodes[index][key],value);
-  assert.ok(normalized.nodes.every(n=>n.permissionMode==='layered'));
-  assert.equal(normalized.accessModelVersion,3);
+  assert.ok(normalized.nodes.every(n=>n.permissionMode==='inherit'||n.permissionMode==='custom'));
+  assert.equal(normalized.accessModelVersion,4);
   for(const [i,library] of state.spaces.entries())for(const [key,value] of Object.entries(library))assert.deepEqual(normalized.spaces[i][key],value);assert.equal(normalized.spaces[1].responsibleId,state.spaces[1].ownerId);
   assert.equal(nodeRole(normalized,normalized.nodes[4],'lin-xia').view,false);
 });

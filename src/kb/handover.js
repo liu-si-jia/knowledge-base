@@ -19,7 +19,7 @@ export function handoverScope(state,id,entity='node'){
 }
 export function handoverSnapshot(state,id,entity='node'){
   const {item,children}=handoverScope(state,id,entity);if(!item)return '';
-  return JSON.stringify([accessFingerprint(state,item,entity),item.updatedAt,item.deletedAt,children.map(n=>[n.id,n.parentId,n.spaceId,creatorId(n),responsibleId(n),n.updatedAt,n.deletedAt,n.localAccess,n.inheritedExclusions])]);
+  return JSON.stringify([accessFingerprint(state,item,entity),item.updatedAt,item.deletedAt,children.map(n=>[n.id,n.parentId,n.spaceId,creatorId(n),responsibleId(n),n.updatedAt,n.deletedAt,n.localAccess,n.permissionMode,n.convertedBy,n.inheritedExclusions])]);
 }
 export function transferResponsibility(state,{id,entity='node',newResponsibleId,includeChildren=true,expected},userId){
   if(state.viewAs!==userId)throw Error('当前用户已变化，请重新操作');

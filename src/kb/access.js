@@ -3,7 +3,7 @@ import { validateContentDestination } from './destinations.js';
 import { validateContentName, uploadedExtension } from './contentCreation.js';
 import { accessFromSubjects, companyId, legacyRights, PERMISSION_ROLES, subjectExists, subjectKey, subjectMatches, subjectRights, toSubjectAccess, mergeSubjects } from './permissions.js';
 import { composeOrdinarySubjects, validateLocalEdits } from './collaboratorRules.js';
-export const ACCESS_VERSION=3;
+export const ACCESS_VERSION=4;
 export const LIBRARY_TYPES={personal:'个人知识库',shared:'共享知识库',plaza:'知识广场'};
 export const libraryType=space=>space?.kind||'shared';
 export const CAPABILITIES=[['view','查看'],['edit','编辑'],['share','分享'],['manage','管理'],['download','下载']];
@@ -21,19 +21,21 @@ export function activeNode(state,node,includeDeleted=false){
   while(cursor){if(seen.has(cursor.id)||cursor.spaceId!==space.id||(!includeDeleted&&cursor.deletedAt))return false;seen.add(cursor.id);if(!cursor.parentId)return true;cursor=state.nodes.find(n=>n.id===cursor.parentId);if(!cursor||cursor.type!=='folder')return false;}
   return false;
 }
-export function protectedManagers(state,item,entity='node'){
+export function displayedResponsibles(state,item,entity='node'){
   if(!item)return [];
   const space=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId);if(!space)return [];
-  const rows=new Map();
-  const add=(id,source)=>{if(!id)return;const row=rows.get(id)||{id,sources:[]};if(!row.sources.includes(source))row.sources.push(source);rows.set(id,row);};
-  add(responsibleId(space),'知识库负责人');
-  if(libraryType(space)==='personal')return [...rows.values()];
-  if(entity==='node'){
-    add(responsibleId(item),item.type==='folder'?'本文件夹负责人':'文件负责人');
-    let parent=item.parentId?state.nodes.find(n=>n.id===item.parentId):null;const seen=new Set([item.id]);
-    while(parent&&parent.spaceId===space.id&&parent.type==='folder'&&!seen.has(parent.id)){seen.add(parent.id);add(responsibleId(parent),`上级文件夹「${parent.name}」负责人`);parent=state.nodes.find(n=>n.id===parent.parentId);}
-  }
-  return [...rows.values()];
+  const libraryId=responsibleId(space);
+  if(entity==='space'||libraryType(space)==='personal')return libraryId?[{id:libraryId,sources:['负责人']}]:[];
+  const itemId=responsibleId(item);
+  if(!libraryId)return itemId?[{id:itemId,sources:['本项负责人']}]:[];
+  if(libraryId===itemId)return [{id:libraryId,sources:['知识库负责人','本项负责人']}];
+  return [{id:libraryId,sources:['知识库负责人']},{id:itemId,sources:['本项负责人']}];
+}
+export const protectedManagers=displayedResponsibles;
+export const displayedResponsibleIds=(state,item,entity='node')=>[...new Set(displayedResponsibles(state,item,entity).map(row=>row.id).filter(Boolean))];
+export function permissionModeFor(node){
+  if(node?.permissionMode==='custom'||node?.permissionMode==='inherit')return node.permissionMode;
+  return node?.localAccess?.subjects?.length?'custom':'inherit';
 }
 export function libraryLocalAccess(state,space){return toSubjectAccess(state,space?.access||empty(),[responsibleId(space)]);}
 export function plazaFloor(state,space){return libraryType(space)==='plaza'?[{type:'company',id:companyId(state),role:'viewer'}]:[];}
@@ -42,39 +44,85 @@ export function spaceAccess(state,space){
   if(libraryType(space)==='personal')return scopedAccess(state,[manager(responsibleId(space))],responsibleId(space),'personal');
   return scopedAccess(state,mergeSubjects(libraryLocalAccess(state,space).subjects,plazaFloor(state,space),[manager(responsibleId(space))]),responsibleId(space),libraryType(space));
 }
-function ordinaryAccess(state,node,seen=new Set()){
+function excludeDisplayed(state,item,entity,subjects){
+  const owners=new Set(displayedResponsibleIds(state,item,entity));
+  return (subjects||[]).filter(s=>!(s.type==='person'&&owners.has(s.id)));
+}
+export function ordinaryNodeAccess(state,node,seen=new Set()){
+  if(!node||seen.has(node.id))return empty();
+  const space=state.spaces.find(s=>s.id===node.spaceId);if(!space||libraryType(space)==='personal')return empty();
+  if(permissionModeFor(node)==='custom')return accessFromSubjects(state,excludeDisplayed(state,node,'node',toSubjectAccess(state,node.localAccess||empty(),displayedResponsibleIds(state,node)).subjects));
+  return accessFromSubjects(state,inheritedOrdinarySubjects(state,node,seen));
+}
+export function inheritedOrdinarySubjects(state,node,seen=new Set()){
+  if(!node||seen.has(node.id))return [];seen.add(node.id);
+  const space=state.spaces.find(s=>s.id===node.spaceId);if(!space||libraryType(space)==='personal')return [];
+  const parent=state.nodes.find(n=>n.id===node.parentId&&n.spaceId===node.spaceId&&n.type==='folder');
+  const base=parent?ordinaryNodeAccess(state,parent,seen).subjects:libraryLocalAccess(state,space).subjects;
+  const inherited=parent?mergeSubjects(base,responsibleId(parent)?[manager(responsibleId(parent))]:[]):base;
+  return excludeDisplayed(state,node,'node',inherited);
+}
+function legacyOrdinaryAccess(state,node,seen=new Set()){
   if(!node||seen.has(node.id))return empty();seen.add(node.id);
   const space=state.spaces.find(s=>s.id===node.spaceId);if(!space||libraryType(space)==='personal')return empty();
   const parent=state.nodes.find(n=>n.id===node.parentId&&n.spaceId===node.spaceId&&n.type==='folder');
-  const inherited=parent?ordinaryAccess(state,parent,seen):libraryLocalAccess(state,space);
-  // Parent changes do not rewrite local values; effective rights union both layers.
+  const inherited=parent?legacyOrdinaryAccess(state,parent,seen):libraryLocalAccess(state,space);
   return accessFromSubjects(state,composeOrdinarySubjects(inherited.subjects,node.localAccess?.subjects||[]));
 }
 export function parentAccess(state,node){const parent=state.nodes.find(n=>n.id===node?.parentId&&n.spaceId===node?.spaceId&&n.type==='folder');return parent?effectiveAccess(state,parent):spaceAccess(state,state.spaces.find(s=>s.id===node?.spaceId));}
 export function effectiveAccess(state,node){
   if(!node)return empty();if(node.creationDraft)return scopedAccess(state,[manager(node.draftOwnerId||creatorId(node))],node.draftOwnerId||creatorId(node),'personal');const space=state.spaces.find(s=>s.id===node.spaceId);if(!space)return empty();
-  const protections=protectedManagers(state,node).map(row=>manager(row.id));
+  const protections=displayedResponsibles(state,node).map(row=>manager(row.id));
   if(libraryType(space)==='personal')return scopedAccess(state,protections,responsibleId(space),'personal');
-  return scopedAccess(state,mergeSubjects(ordinaryAccess(state,node).subjects,plazaFloor(state,space),protections),responsibleId(node),libraryType(space));
+  return scopedAccess(state,mergeSubjects(ordinaryNodeAccess(state,node).subjects,plazaFloor(state,space),protections),responsibleId(node),libraryType(space));
 }
 function applyAccess(state,access,userId){const rights={...NO_RIGHTS};for(const s of access.subjects||[])if(subjectMatches(state,s,userId)){const r=subjectRights(s);for(const [key] of CAPABILITIES)rights[key] ||= !!r[key];}return rights;}
 export function libraryRights(state,space,userId,includeDeleted=false){if(!space||(!includeDeleted&&space.deletedAt))return {...NO_RIGHTS};return applyAccess(state,spaceAccess(state,space),userId);}
 export function contentRights(state,node,userId,includeDeleted=false){
-  if(node?.creationDraft&&(node.draftOwnerId||creatorId(node))!==userId){const library=state.spaces.find(s=>s.id===node.spaceId);return {...NO_RIGHTS,manage:protectedManagers(state,node).some(row=>row.id===userId)||libraryRights(state,library,userId,includeDeleted).manage};}
+  if(node?.creationDraft&&(node.draftOwnerId||creatorId(node))!==userId){const library=state.spaces.find(s=>s.id===node.spaceId);return {...NO_RIGHTS,manage:displayedResponsibles(state,node).some(row=>row.id===userId)||libraryRights(state,library,userId,includeDeleted).manage};}
   if(!activeNode(state,node,includeDeleted)){
     const space=state.spaces.find(s=>s.id===node?.spaceId);
-    if(includeDeleted&&node?.deletedAt&&space&&(responsibleId(space)===userId||libraryType(space)!=='personal'&&(protectedManagers(state,node).some(row=>row.id===userId)||libraryRights(state,space,userId,true).manage)))return {...ALL_RIGHTS};
+    if(includeDeleted&&node?.deletedAt&&space&&(responsibleId(space)===userId||libraryType(space)!=='personal'&&(displayedResponsibles(state,node).some(row=>row.id===userId)||libraryRights(state,space,userId,true).manage)))return {...ALL_RIGHTS};
     return {...NO_RIGHTS};
   }
   if(node.creationDraft)return {...NO_RIGHTS,view:true,edit:true,manage:true};
   return applyAccess(state,effectiveAccess(state,node),userId);
 }
-// New prototype datasets use fixed types; no legacy permission migration is performed.
-export function migrateAccess(state){const owned=initializeOwnership(state);return {...owned,accessModelVersion:ACCESS_VERSION,nodes:owned.nodes.map(n=>({...n,permissionMode:'layered',localAccess:n.localAccess||empty(),inheritedExclusions:n.inheritedExclusions||[]}))};}
+export function migrateAccess(state){
+  const owned=initializeOwnership(state);
+  const legacy=new Map(owned.nodes.map(node=>[node.id,legacyOrdinaryAccess(owned,node)]));
+  return {...owned,accessModelVersion:ACCESS_VERSION,nodes:owned.nodes.map(node=>{
+    const space=owned.spaces.find(s=>s.id===node.spaceId),personal=!space||libraryType(space)==='personal';
+    if(node.permissionMode==='inherit'||node.permissionMode==='custom'){
+      return {...node,inheritedExclusions:[],...(personal?{permissionMode:'inherit',localAccess:empty(),convertedBy:undefined}:{})};
+    }
+    const owners=displayedResponsibleIds(owned,node);
+    const local=toSubjectAccess(owned,node.localAccess||empty(),owners);
+    if(personal||!local.subjects.length)return {...node,permissionMode:'inherit',localAccess:empty(),inheritedExclusions:[],convertedBy:undefined};
+    const parent=owned.nodes.find(n=>n.id===node.parentId&&n.spaceId===node.spaceId&&n.type==='folder');
+    const inheritedBase=parent?mergeSubjects((legacy.get(parent.id)||empty()).subjects,responsibleId(parent)?[manager(responsibleId(parent))]:[]):libraryLocalAccess(owned,space).subjects;
+    const inherited=toSubjectAccess(owned,accessFromSubjects(owned,inheritedBase),owners);
+    const snapshot=accessFromSubjects(owned,excludeDisplayed(owned,node,'node',composeOrdinarySubjects(inherited.subjects,local.subjects)));
+    return {...node,permissionMode:'custom',localAccess:snapshot,inheritedExclusions:[],convertedBy:undefined};
+  })};
+}
 export function permissionLayers(state,node){
-  const space=state.spaces.find(s=>s.id===node.spaceId),protectedRows=protectedManagers(state,node),owners=protectedRows.map(row=>row.id);
-  const parent=state.nodes.find(n=>n.id===node.parentId&&n.spaceId===node.spaceId&&n.type==='folder');
-  return {inherited:toSubjectAccess(state,parent?ordinaryAccess(state,parent):libraryLocalAccess(state,space),owners),local:toSubjectAccess(state,node.localAccess||empty(),owners),excluded:[],protectedRows,floor:plazaFloor(state,space),personal:libraryType(space)==='personal'};
+  const space=state.spaces.find(s=>s.id===node.spaceId),protectedRows=displayedResponsibles(state,node),owners=protectedRows.map(row=>row.id);
+  return {mode:permissionModeFor(node),inherited:accessFromSubjects(state,inheritedOrdinarySubjects(state,node)),local:toSubjectAccess(state,node.localAccess||empty(),owners),excluded:[],protectedRows,floor:plazaFloor(state,space),personal:libraryType(space)==='personal',convertedBy:node.convertedBy};
+}
+export function switchNodePermissionMode(state,node,nextMode,userId){
+  if(!['inherit','custom'].includes(nextMode))throw Error('请选择继承或自定义');
+  const space=state.spaces.find(s=>s.id===node?.spaceId);
+  if(!node||!space)throw Error('内容已不可用');
+  if(libraryType(space)==='personal')throw Error('个人内容仅本人管理，无需切换继承或自定义');
+  if(!contentRights(state,node,userId).manage)throw Error('当前没有管理权限');
+  const current=permissionModeFor(node);
+  if(current===nextMode)return {permissionMode:current,localAccess:current==='custom'?toSubjectAccess(state,node.localAccess||empty(),displayedResponsibleIds(state,node)):empty(),convertedBy:current==='custom'?node.convertedBy:undefined};
+  if(nextMode==='custom'){
+    const snapshot=inheritedOrdinarySubjects(state,node).map(subject=>({type:subject.type,id:subject.id,role:subject.role,...(subject.role==='legacy'?{rights:subject.rights}:{}),...(userId?{addedBy:userId}:{})}));
+    return {permissionMode:'custom',localAccess:accessFromSubjects(state,snapshot),convertedBy:userId};
+  }
+  return {permissionMode:'inherit',localAccess:empty(),convertedBy:undefined};
 }
 export function actualNodes(state,space,userId,view='all'){
   if(!space||space.deletedAt||view!=='all'&&view!==libraryType(space))return [];
@@ -105,22 +153,23 @@ export function validateAccess(state,access,ownerIds=[]){
     return {type:s.type,id:s.id,role:s.role,...(s.role==='legacy'?{rights:legacyRights(s.rights)}:{}),...(typeof s.addedBy==='string'&&s.addedBy?{addedBy:s.addedBy}:{})};
   });return accessFromSubjects(state,subjects);
 }
-export function accessFingerprint(state,item,entity){const space=entity==='space'?item:state.spaces.find(s=>s.id===item?.spaceId);return JSON.stringify([creatorId(item),responsibleId(item),item?.ownership,item?.spaceId,space?.kind,item?.access,item?.localAccess,item?.inheritedExclusions,entity==='node'?parentAccess(state,item):null,protectedManagers(state,item,entity)]);}
-export function saveEntityAccess(state,{id,entity='node',access,expected,localAccess,inheritedExclusions},userId){
+export function accessFingerprint(state,item,entity){const space=entity==='space'?item:state.spaces.find(s=>s.id===item?.spaceId);return JSON.stringify([creatorId(item),responsibleId(item),item?.ownership,item?.spaceId,space?.kind,item?.access,item?.localAccess,item?.permissionMode,item?.convertedBy,item?.inheritedExclusions,entity==='node'?parentAccess(state,item):null,displayedResponsibles(state,item,entity)]);}
+export function saveEntityAccess(state,{id,entity='node',access,expected,localAccess,permissionMode,convertedBy},userId){
   const collection=entity==='space'?'spaces':'nodes',item=state[collection].find(n=>n.id===id),rights=entity==='space'?libraryRights(state,item,userId):contentRights(state,item,userId);
   if(!item||item.deletedAt||!rights.manage)throw Error('当前没有管理权限，无法调整授权');
   if(expected&&accessFingerprint(state,item,entity)!==expected)throw Error('权限或位置已变化，请关闭后重新打开核对');
-  const space=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId),owners=protectedManagers(state,item,entity).map(row=>row.id);
+  const space=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId),owners=displayedResponsibleIds(state,item,entity);
+  const hasSubjects=(localAccess||access)?.subjects?.length;
+  const mode=entity==='node'?(permissionMode||(hasSubjects?'custom':permissionModeFor(item))):'custom';
+  if(entity==='node'&&mode==='inherit'&&libraryType(space)!=='personal'){
+    if(hasSubjects)throw Error('继承模式不能单独添加或修改权限，请先转为自定义');
+    return {...state,nodes:state.nodes.map(n=>n.id===id?{...n,permissionMode:'inherit',localAccess:empty(),convertedBy:undefined,inheritedExclusions:[],updatedAt:new Date().toISOString()}:n)};
+  }
   const checked=validateAccess(state,entity==='node'?localAccess??access??empty():access??empty(),owners);
-  if(libraryType(space)==='personal'&&(checked.subjects.length||(inheritedExclusions||[]).length))throw Error('个人知识库仅本人管理，协作前请先移动到共享知识库或知识广场');
-  // Protected rows are locked in the editor. Keep their underlying ordinary
-  // grants/exclusions so unrelated saves do not erase post-handover rights.
-  const isProtected=s=>s.type==='person'&&owners.includes(s.id);
-  const retained=libraryType(space)==='personal'?[]:toSubjectAccess(state,(entity==='space'?item.access:item.localAccess)||empty()).subjects.filter(isProtected);
-  const ordinary=validateLocalEdits(checked.subjects,toSubjectAccess(state,(entity==='space'?item.access:item.localAccess)||empty()).subjects,entity==='node'?permissionLayers(state,item).inherited.subjects:[],userId);
-  const savedAccess=accessFromSubjects(state,mergeSubjects(retained,ordinary));
-  const excluded=[]; // Retired: inherited grants cannot be excluded.
-  return {...state,[collection]:state[collection].map(n=>n.id===id?{...n,...(entity==='space'?{access:savedAccess}:{permissionMode:'layered',localAccess:savedAccess,inheritedExclusions:excluded}),updatedAt:new Date().toISOString()}:n)};
+  if(libraryType(space)==='personal'&&checked.subjects.length)throw Error('个人知识库仅本人管理，协作前请先移动到共享知识库或知识广场');
+  const ordinary=validateLocalEdits(checked.subjects,toSubjectAccess(state,(entity==='space'?item.access:item.localAccess)||empty()).subjects,[],userId);
+  const savedAccess=accessFromSubjects(state,ordinary);
+  return {...state,[collection]:state[collection].map(n=>n.id===id?{...n,...(entity==='space'?{access:savedAccess}:{permissionMode:'custom',localAccess:savedAccess,convertedBy:convertedBy||item.convertedBy,inheritedExclusions:[]}),updatedAt:new Date().toISOString()}:n)};
 }
 export function creationAccess(state,fields){return {inherit:true,access:parentAccess(state,fields)};}
 export function restorableAccess(state,node){return effectiveAccess(state,node);}
@@ -153,5 +202,5 @@ export function restoreContent(state,nodeId,userId,position){
   if(libraryType(space)==='personal'&&(responsibleId(space)!==userId||affected.some(n=>creatorId(n)!==userId)))throw Error('只能将本人创建的个人内容恢复到个人知识库');
   const moving=new Set(affected.map(n=>n.id)),changed=target.spaceId!==node.spaceId||(target.parentId||'')!==(node.parentId||'');
   if(affected.some(n=>state.nodes.some(x=>!x.deletedAt&&!moving.has(x.id)&&x.spaceId===target.spaceId&&(x.parentId||'')===(n.id===nodeId?(target.parentId||''):n.parentId)&&x.name.trim().toLocaleLowerCase()===(n.id===nodeId?name:n.name).trim().toLocaleLowerCase())))throw Error('恢复位置已有同名内容，请另选目录');
-  return {...state,nodes:state.nodes.map(n=>moving.has(n.id)?{...n,spaceId:target.spaceId,ownership:libraryType(space)==='personal'?'personal':'organization',...(n.id===nodeId?{parentId:target.parentId||'',name}:{}),...(changed?{localAccess:empty(),inheritedExclusions:[]}:{}),deletedAt:'',deletedBy:undefined,deleteBatch:undefined,originalLocation:undefined,updatedAt:new Date().toISOString()}:n)};
+  return {...state,nodes:state.nodes.map(n=>moving.has(n.id)?{...n,spaceId:target.spaceId,ownership:libraryType(space)==='personal'?'personal':'organization',...(n.id===nodeId?{parentId:target.parentId||'',name}:{}),...(changed?{permissionMode:'inherit',localAccess:empty(),convertedBy:undefined,inheritedExclusions:[]}:{}),deletedAt:'',deletedBy:undefined,deleteBatch:undefined,originalLocation:undefined,updatedAt:new Date().toISOString()}:n)};
 }
