@@ -56,7 +56,7 @@ function ModeSwitchConfirm({nextMode,onCancel,onConfirm}){
 
 export default function AccessManagerFields({
   state,userId,local,inherited,floor=[],ownerIds=[],protectedRows,onChange,personal=false,
-  mode,onModeChange,allowModeSwitch=false,
+  mode,onModeChange,allowModeSwitch=false,showResponsibility=true,showFloorNotice=true,
 }){
   const currentMode=allowModeSwitch?(mode||'inherit'):'custom';
   const inheritLocked=currentMode==='inherit';
@@ -95,8 +95,8 @@ export default function AccessManagerFields({
   }).filter(row=>row.role);
 
   return <div className="grant-fields access-manager-fields">
-    <GrantNotices state={state} showOwners={false} floor={floor}/>
-    {!!protections.length&&<div className="grant-responsibility" aria-label="负责人">
+    {showFloorNotice&&<GrantNotices state={state} showOwners={false} floor={floor}/>}
+    {showResponsibility&&!!protections.length&&<div className="grant-responsibility" aria-label="负责人">
       {protections.map(row=>{
         const subject={type:'person',id:row.id},name=subjectLabel(state,subject);
         return <div className="grant-row is-owner" key={`owner:${row.id}`}>

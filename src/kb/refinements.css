@@ -38,6 +38,15 @@
 .home-document-table .home-document-row>[data-column] svg{vertical-align:middle}
 .home-document-table .home-document-row:not(.head)>span:nth-child(3){display:block}
 .knowledge-product-dialog .library-kind-readonly{margin:0 0 18px;padding:10px 12px;background:#f6f8fc;border:1px solid #e5ebf3;border-radius:6px;font-size:12px;color:#71829b}
+.knowledge-product-dialog .library-settings-meta{display:flex;flex-direction:column;gap:4px;margin:0 0 14px;padding:10px 12px;background:#f6f8fc;border:1px solid #e5ebf3;border-radius:6px;font-size:12px;line-height:1.7;color:#71829b}
+.knowledge-product-dialog .library-settings-meta p.library-kind-readonly,
+.knowledge-product-dialog .library-settings-meta p.library-responsibility,
+.knowledge-product-dialog .library-settings-meta div.grant-notices,
+.knowledge-product-dialog .library-settings-meta div.grant-notices>p.grant-notice,
+.knowledge-product-dialog .library-settings-meta p.grant-notice{margin:0;padding:0;border:0;background:transparent;border-radius:0;font-size:inherit;line-height:inherit;color:inherit;display:block;justify-content:unset;align-items:unset;gap:0}
+.knowledge-product-dialog .library-settings-meta div.grant-notices{display:flex;flex-direction:column;gap:4px}
+.knowledge-product-dialog.library-metadata-dialog .permission-edit-fields .grant-fields{margin:0 0 16px!important}
+
 
 /* Sidebar pin membership stays unchanged; card pin affordances appear on interaction. */
 .library-wide-card>.knowledge-card-pin,.library-wide-card>.knowledge-card-pin.is-pinned{opacity:0;pointer-events:none;transition:opacity .14s ease}
