@@ -27,7 +27,9 @@ import FileMenu from './FileMenu.jsx';
 import PinnedLibraries from './PinnedLibraries.jsx';
 import HomeDisplaySettings from './HomeDisplaySettings.jsx';
 import { homeColumns } from './homeDisplay.js';
-import { homeEntries, recentVisits, visitContent } from './personalization.js';
+import { homeEntries, recentVisits, visitContent, toggleNodePin, isContentPinned } from './personalization.js';
+import OverlayNotice from './OverlayNotice.jsx';
+import { ASK_AI_OVERLAY_KEY, ONLYOFFICE_OVERLAY_KEY } from './sessionOverlay.js';
 import './refinements.css';
 import { useLocationDialog } from './LocationPicker.jsx';
 import { actionReason, favorites, setFavorite, batchPreflight, performBatch, sourceLocations } from './fileActions.js';
@@ -260,6 +262,7 @@ export function KnowledgeApp() {
       if(action==='open'){openDoc(current.id);return;}
       if(action==='ai'){detailAiReturnFocus.current=document.activeElement;setDetailAiTarget({id:current.id,spaceId:current.spaceId});setDetailAiOpen(true);return;}
       if(action==='favorite'){update(s=>setFavorite(s,current.id,userId));say(favorites(latest,userId).includes(current.id)?'已取消收藏':'已收藏');return;}
+      if(action==='pin'){const pinned=isContentPinned(latest,userId,current.id);update(s=>toggleNodePin(s,userId,current.id));say(pinned?'已取消置顶':'已添加到左侧置顶');return;}
       if(action==='permissions'){openAccess(current);return;}
       if(action==='handover'){openHandover(current);return;}
       if(action==='copy'||action==='move'){openRelocate(current,action,location.view);return;}
@@ -315,14 +318,14 @@ export function KnowledgeApp() {
         </div>
         <GlobalSearch state={state} userId={userId} onOpen={openDoc} onLibrary={(id,view)=>go(spaceUrl(id,view))} onNotice={say}/>
         <nav>
-          <button className={location.path === "ask" ? "active" : ""} onClick={() => go("/ask")}><ChatCircleDots size={19} />问AI</button>
-          <button className={location.path === "home" ? "active" : ""} onClick={() => { setQuery(""); go("/home"); }}><House size={19} />主页</button>
-          <button className={location.path === "plaza" ? "active" : ""} onClick={() => { setQuery(""); go("/plaza"); }}><Compass size={19} />知识广场</button>
-          <button className={location.path === "shared" ? "active" : ""} onClick={() => { setQuery(""); go("/shared"); }}><UsersThree size={19} />共享知识库</button>
-          <button className={location.path === "personal" ? "active" : ""} onClick={() => { setQuery(""); go("/personal"); }}><BookBookmark size={19} weight="fill" />个人知识库</button>
-          <button className={location.path === "recycle" ? "active" : ""} onClick={() => go("/recycle")}><Trash size={19} />回收站</button>
+          <button title="问AI" className={location.path === "ask" ? "active" : ""} onClick={() => go("/ask")}><ChatCircleDots size={19} />问AI</button>
+          <button title="主页" className={location.path === "home" ? "active" : ""} onClick={() => { setQuery(""); go("/home"); }}><House size={19} />主页</button>
+          <button title="知识广场" className={location.path === "plaza" ? "active" : ""} onClick={() => { setQuery(""); go("/plaza"); }}><Compass size={19} />知识广场</button>
+          <button title="共享知识库" className={location.path === "shared" ? "active" : ""} onClick={() => { setQuery(""); go("/shared"); }}><UsersThree size={19} />共享知识库</button>
+          <button title="个人知识库" className={location.path === "personal" ? "active" : ""} onClick={() => { setQuery(""); go("/personal"); }}><BookBookmark size={19} weight="fill" />个人知识库</button>
+          <button title="回收站" className={location.path === "recycle" ? "active" : ""} onClick={() => go("/recycle")}><Trash size={19} />回收站</button>
         </nav>
-        <PinnedLibraries state={state} userId={userId} update={update} onOpen={(id,view)=>go(spaceUrl(id,view))} onNotice={say}/>
+        <PinnedLibraries state={state} userId={userId} update={update} onOpen={item=>{if(item.kind==='node')openDoc(item.node.id);else go(spaceUrl(item.library.id,item.view));}} onNotice={say}/>
         <div className="kb-identity">
           <small>{state.org.name} · 当前身份</small>
           <select aria-label="当前身份" value={state.viewAs} onChange={(event) => update((current) => ({ ...current, viewAs: event.target.value }))}>
@@ -336,9 +339,9 @@ export function KnowledgeApp() {
         {!subnavCollapsed && <div className="knowledge-subnav-resize-handle" role="separator" aria-label="调整侧栏宽度" onPointerDown={startSubnavResize} />}
       </aside>}
       <div className={`knowledge-page${detailAiOpen && isDetail ? " detail-ai-open" : ""}`}>
-        {location.path === "home" && <HomePage state={state} userId={userId} query={query} setQuery={setQuery} onOpen={openDoc} update={update} startUpload={startUpload} onCreateLibrary={()=>setLibraryDialog(true)} startCreate={startCreate} openRelocate={openRelocate} onAction={fileAction} openShare={openShare} />}
-        {location.path === "ask" && <AskPage state={state} userId={userId} onOpen={openDoc} />}
-        {isLibrary && <LibraryPage state={state} userId={userId} section={section} query={query} setQuery={setQuery} startCreate={startCreate} startUpload={startUpload} onCreateLibrary={() => setLibraryDialog(true)} update={update} openSettings={openSettings} say={say} />}
+        {location.path === "home" && <HomePage state={state} userId={userId} onOpen={openDoc} update={update} startUpload={startUpload} onCreateLibrary={()=>setLibraryDialog(true)} startCreate={startCreate} openRelocate={openRelocate} onAction={fileAction} openShare={openShare} />}
+        {location.path === "ask" && <div className="ask-page-frame"><AskPage state={state} userId={userId} onOpen={openDoc} /><OverlayNotice storageKey={ASK_AI_OVERLAY_KEY} title="一期暂不开发" className="ask-ai-overlay"/></div>}
+        {isLibrary && <LibraryPage state={state} userId={userId} section={section} startCreate={startCreate} startUpload={startUpload} onCreateLibrary={() => setLibraryDialog(true)} update={update} openSettings={openSettings} say={say} />}
         {isDetail && <SpaceDetail onHandover={openHandover} state={state} userId={userId} space={space} query={query} folderPath={folderPath} menuFor={menuFor} setMenuFor={setMenuFor} detailAiOpen={detailAiOpen} setDetailAiOpen={setDetailAiOpen} openAccess={openAccess} openShare={openShare} openSettings={openSettings} onAction={fileAction} onBatch={batchAction} locateId={location.locate} origin={location.view} startCreate={startCreate} startUpload={startUpload} folderDraft={folderDraft} onCloseFolder={()=>setFolderDraft(null)} onFolderCreated={node=>say(`已创建文件夹「${node.name}」`)} openDoc={openDoc} openRelocate={openRelocate} say={say} setConfirm={setConfirm} update={update} />}
         {location.path === "recycle" && <RecyclePage state={state} userId={userId} update={update} setConfirm={setConfirm} say={say} />}
       </div>
@@ -361,15 +364,15 @@ function Empty({ title, body, action }) {
   return <div className="knowledge-empty"><MagnifyingGlass size={28} /><strong>{title}</strong><span>{body}</span>{action && <div className="new-create-empty">{action}</div>}</div>;
 }
 
-function HomePage({ state, userId, query, setQuery, onOpen, update, startUpload, onCreateLibrary, startCreate, openRelocate, onAction, openShare }) {
+function HomePage({ state, userId, onOpen, update, startUpload, onCreateLibrary, startCreate, openRelocate, onAction, openShare }) {
   const [tab, setTab] = useState("recent");
-  const list=homeEntries(state,userId,tab,query);
+  const list=homeEntries(state,userId,tab);
   const visits=recentVisits(state,userId);
   const columns=homeColumns(state,userId).filter(column=>!column.hidden);
   const grid={gridTemplateColumns:`minmax(260px,2fr) ${columns.map(column=>column.width).join(' ')} 104px`,minWidth:380+18*(columns.length+1)+columns.reduce((sum,column)=>sum+({location:150,owner:110}[column.id]||130),0)};
   const editable = writableLibraries(state, userId)[0];
   return <>
-    <header className="knowledge-home-header"><h1>主页</h1><label><MagnifyingGlass size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索文档" /></label></header>
+    <header className="knowledge-home-header"><h1>主页</h1></header>
     <div className="knowledge-home-actions kb-shortcut-actions">
       <CreateMenu variant="home" disabled={!editable} reason="没有可编辑的知识库，请先创建知识库或获得编辑权限" onChoose={format => startCreate(format)} />
       <UploadMenu variant="home" disabled={!editable} reason="没有可编辑的位置" onChoose={kind=>startUpload({kind})}/>
@@ -614,9 +617,8 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
   const outline=documentOutline(node,editing?draft:node.body||'').filter(item=>!editing||!item.id.startsWith('doc-section-')),sections=documentSections(node,editing?draft:node.body||'');
   const jumpTo=item=>{if(item.slide!==undefined)setActiveSlide(item.slide);setOutlineActive(item.key||item.id);requestAnimationFrame(()=>scrollDocumentSection(bodyElement.current?.closest('.document-scroll-area'),bodyElement.current?.querySelector(`[id="${item.id==='doc-body'&&!editing&&!['sheet','slides','file'].includes(node.format)&&paragraphs.length<=1?'doc-summary':item.id}"]`)));};
   return <div className="knowledge-doc-shell">
-    <a className="knowledge-doc-back" title={space?.name||'知识库'} onClick={event => { if (editing && (isNewDraft||draft !== baseBody.current)) { event.preventDefault(); setLeave("back"); } }} href={`#${backUrl}`}>返回 {space?.name || "知识库"}</a>
-    <main className="standalone-document-page">
-      <header className="document-window-bar">
+    <header className="document-window-bar document-chrome-bar">
+        <a className="knowledge-doc-back" title={space?.name||'知识库'} onClick={event => { if (editing && (isNewDraft||draft !== baseBody.current)) { event.preventDefault(); setLeave("back"); } }} href={`#${backUrl}`}>返回 {space?.name || "知识库"}</a>
         <div className="document-window-title"><ContentIcon node={node} size={20} /><DocumentTitle key={node.id} state={state} node={node} userId={userId} update={update} editable={role.edit}/><StarFour size={18} /></div>
         <div className="document-window-actions">
           <span className="new-saved-status" role="status">{isNewDraft?"新建草稿 · 首次保存后生效":editing ? draft !== baseBody.current ? "有未保存修改" : "编辑中" : "已保存"}</span><span>{formatTime(node.updatedAt)}</span>
@@ -627,7 +629,9 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
           <FileMenu state={state} node={node} userId={userId} context="document" editing={editing} onAction={(action,item)=>{if(action==='edit')startEdit();else if(action==='ai'){setKnowledge({mode:'doc',items:[]});setAiOpen(true);}else onAction(action,item);}}/>
           <img className="avatar avatar-small" src={publicAsset("/user-avatar.png")} alt={memberName(state, node.ownerId)} />
         </div>
-      </header>
+    </header>
+    <main className="standalone-document-page document-editor-area">
+      <OverlayNotice storageKey={ONLYOFFICE_OVERLAY_KEY} title="OnlyOffice 区域" className="onlyoffice-overlay"/>
       {recoveredDraft&&editing&&<p className="draft-recovered-note" role="status">已恢复本标签页未保存的草稿，请核对后保存。</p>}
       {saveError && <p className="new-document-error" role="alert">{saveError}</p>}
       <div className={`document-format-toolbar ${toolbarCollapsed&&node.format!=='file' ? "collapsed" : ""}`} role="toolbar" aria-label="文档编辑工具栏">

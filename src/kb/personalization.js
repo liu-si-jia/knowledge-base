@@ -10,11 +10,34 @@ export function pinnedRecords(state,userId){
   return userId===state.meId?librariesForView(state,userId).slice(0,4).map(s=>({spaceId:s.id,view:libraryType(s)})):[];
 }
 function effectiveLibraryView(state,id,userId,preferred){return [preferred,'personal','shared','plaza'].filter(Boolean).find(view=>librariesForView(state,userId,view).some(s=>s.id===id))||'';}
-export function visiblePins(state,userId){const seen=new Set();return pinnedRecords(state,userId).map(record=>({library:state.spaces.find(s=>s.id===record.spaceId),view:effectiveLibraryView(state,record.spaceId,userId,record.view)})).filter(p=>{if(!p.library||p.library.deletedAt||!p.view||seen.has(p.library.id))return false;seen.add(p.library.id);return true;});}
+export function pinKey(record){return record?.nodeId?`node:${record.nodeId}`:record?.spaceId||'';}
+export function isLibraryPin(record){return !!record&&!record.nodeId&&!!record.spaceId;}
+export function visiblePins(state,userId){
+  const seen=new Set();
+  return pinnedRecords(state,userId).map(record=>{
+    if(record.nodeId){
+      const node=state.nodes.find(n=>n.id===record.nodeId);
+      const library=node&&state.spaces.find(s=>s.id===node.spaceId);
+      const view=effectiveLibraryView(state,node?.spaceId,userId,record.view);
+      return {key:pinKey(record),kind:'node',node,library,view,record};
+    }
+    const library=state.spaces.find(s=>s.id===record.spaceId);
+    const view=effectiveLibraryView(state,record.spaceId,userId,record.view);
+    return {key:pinKey(record),kind:'library',library,view,record};
+  }).filter(item=>{
+    if(item.kind==='library'){
+      if(!item.library||item.library.deletedAt||!item.view||seen.has(item.key))return false;
+      seen.add(item.key);return true;
+    }
+    if(!item.node||item.node.deletedAt||!item.library||item.library.deletedAt||!item.view)return false;
+    if(!contentRights(state,item.node,userId).view||seen.has(item.key))return false;
+    seen.add(item.key);return true;
+  });
+}
 const PIN_SPACES=['personal','shared','plaza'];
 export function pinnedLibrariesForView(state,userId,view){
   const available=new Map(librariesForView(state,userId,view).map(library=>[library.id,library]));
-  const ids=visiblePins(state,userId).map(p=>p.library.id).filter(id=>available.has(id));
+  const ids=visiblePins(state,userId).filter(p=>p.kind==='library').map(p=>p.library.id).filter(id=>available.has(id));
   const order=state.viewPinOrderByUser?.[userId]?.[view];
   return [...new Set([...(Array.isArray(order)?order:[]).filter(id=>ids.includes(id)),...ids])].map(id=>available.get(id));
 }
@@ -22,10 +45,24 @@ function savePins(state,userId,records){
   const existing=state.pinsByUser||{[state.meId]:pinnedRecords(state,state.meId)};
   return {...state,pinsByUser:{...existing,[userId]:records}};
 }
-export function togglePin(state,userId,id,view){const current=pinnedRecords(state,userId),present=current.some(p=>p.spaceId===id);if(present)return savePins(state,userId,current.filter(p=>p.spaceId!==id));const origin=effectiveLibraryView(state,id,userId,view);if(!origin)throw Error('当前无法访问该知识库');return savePins(state,userId,[...current,{spaceId:id,view:origin}]);}
+export function togglePin(state,userId,id,view){const current=pinnedRecords(state,userId),present=current.some(p=>isLibraryPin(p)&&p.spaceId===id);if(present)return savePins(state,userId,current.filter(p=>!(isLibraryPin(p)&&p.spaceId===id)));const origin=effectiveLibraryView(state,id,userId,view);if(!origin)throw Error('当前无法访问该知识库');return savePins(state,userId,[...current,{spaceId:id,view:origin}]);}
+export function isContentPinned(state,userId,nodeId){return pinnedRecords(state,userId).some(p=>p.nodeId===nodeId);}
+export function toggleNodePin(state,userId,nodeId){
+  const current=pinnedRecords(state,userId);
+  if(current.some(p=>p.nodeId===nodeId))return savePins(state,userId,current.filter(p=>p.nodeId!==nodeId));
+  const node=state.nodes.find(n=>n.id===nodeId);
+  if(!node||node.deletedAt||!contentRights(state,node,userId).view)throw Error('当前无法访问该内容');
+  const origin=effectiveLibraryView(state,node.spaceId,userId);
+  if(!origin)throw Error('当前无法访问该内容');
+  return savePins(state,userId,[...current,{spaceId:node.spaceId,view:origin,nodeId}]);
+}
+function recordByKey(records,id){return records.find(p=>pinKey(p)===id||isLibraryPin(p)&&p.spaceId===id);}
 export function reorderPin(state,userId,id,targetId,after=false){
-  const records=pinnedRecords(state,userId),source=records.find(p=>p.spaceId===id);if(!source||!records.some(p=>p.spaceId===targetId)||id===targetId)return state;
-  const next=records.filter(p=>p.spaceId!==id),at=next.findIndex(p=>p.spaceId===targetId);next.splice(at+(after?1:0),0,source);return savePins(state,userId,next);
+  const records=pinnedRecords(state,userId),source=recordByKey(records,id),target=recordByKey(records,targetId);
+  if(!source||!target||pinKey(source)===pinKey(target))return state;
+  const next=records.filter(p=>pinKey(p)!==pinKey(source)),at=next.findIndex(p=>pinKey(p)===pinKey(target));
+  if(at<0)return state;
+  next.splice(at+(after?1:0),0,source);return savePins(state,userId,next);
 }
 export function reorderViewPin(state,userId,view,id,targetId,after=false){
   if(!PIN_SPACES.includes(view))return state;

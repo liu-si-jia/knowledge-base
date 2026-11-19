@@ -13,7 +13,8 @@ import { VIEW_LABELS, activeNode, actualNodes, libraryRights, librariesForView, 
 import { can, loadState, memberName, nodeRole, spaceRole } from './store.js';
 import InlineFolder from './InlineFolder.jsx';
 import { LibraryIcon } from './libraryIcons.jsx';
-import { LibraryCoverSurface } from './LibraryMetadata.jsx';
+import { LibraryCoverSurface, persistLibraryCover } from './LibraryMetadata.jsx';
+import './overlays.css';
 import { pinnedRecords, togglePin, visitContent } from './personalization.js';
 import FileMenu from './FileMenu.jsx';
 import { handoverReason } from './handover.js';
@@ -27,23 +28,50 @@ const tones=['','ice','night','amber'],icons=[FolderOpen,Briefcase,Lightbulb,Arc
 const titles={personal:'个人知识库',shared:'共享知识库',plaza:'知识广场'};
 const Empty=({title,body,action})=><div className="knowledge-empty"><MagnifyingGlass size={28}/><strong>{title}</strong><span>{body}</span>{action&&<div className="new-create-empty">{action}</div>}</div>;
 
+
+function LibraryCoverEditor({space,userId,update,say}){
+  const input=useRef(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  const pick=async file=>{
+    if(!file||busy)return;
+    if(!/\.(png|jpe?g|gif)$/i.test(file.name)||!file.size||file.size>5*1024*1024){setError('请选择 5MB 以内的 PNG、JPG、JPEG 或 GIF 图片');return;}
+    setBusy(true);setError('');
+    try{
+      const persisted=await persistLibraryCover({kind:'image',file});
+      update(current=>{
+        if(current.viewAs!==userId)throw Error('当前用户已变化，请重新操作');
+        const latest=current.spaces.find(item=>item.id===space.id);
+        if(!latest||latest.deletedAt)throw Error('知识库已不可用');
+        if(responsibleId(latest)!==userId)throw Error('只有该知识库的负责人可以修改背景');
+        return {...current,spaces:current.spaces.map(item=>item.id===space.id?{...item,cover:persisted.cover,updatedAt:new Date().toISOString()}:item)};
+      });
+      say('已更新知识库背景');
+    }catch(err){setError(err.message);}
+    finally{setBusy(false);}
+  };
+  return <>
+    <input ref={input} type="file" accept="image/png,image/jpeg,image/jpg,image/gif" hidden aria-label="选择知识库背景" onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)pick(file);}}/>
+    <button type="button" className="library-cover-edit" disabled={busy} onClick={()=>input.current?.click()}>{busy?'正在保存…':'修改背景'}</button>
+    {error&&<p className="library-cover-edit-error" role="alert">{error}</p>}
+  </>;
+}
+
 function LibraryCard({state,userId,space,section,update,openSettings,say}){
-  const hasCover=!!space.cover&&space.cover.key!=='original',index=state.spaces.findIndex(s=>s.id===space.id),pinned=pinnedRecords(state,userId).some(p=>p.spaceId===space.id),canManage=libraryRights(state,space,userId).manage;
-  const toggle=()=>{try{update(s=>togglePin(s,userId,space.id,section));say(pinned?'已取消置顶':'已添加到左侧置顶知识库');}catch(e){say(e.message);}};
+  const hasCover=!!space.cover&&space.cover.key!=='original',index=state.spaces.findIndex(s=>s.id===space.id),pinned=pinnedRecords(state,userId).some(p=>!p.nodeId&&p.spaceId===space.id),canManage=libraryRights(state,space,userId).manage;
+  const toggle=()=>{try{update(s=>togglePin(s,userId,space.id,section));say(pinned?'已取消置顶':'已添加到左侧置顶');}catch(e){say(e.message);}};
   return <article className={`knowledge-card library-wide-card ${tones[index%tones.length]} ${hasCover?'has-library-cover':''}`}>{hasCover&&<LibraryCoverSurface cover={space.cover}/>}<button className={`knowledge-card-pin ${pinned?'is-pinned':''}`} type="button" aria-label={`${pinned?'取消置顶':'置顶'} ${space.name}`} aria-pressed={pinned} title={pinned?'取消置顶':'置顶到左侧'} onClick={toggle}><PushPin size={16} weight={pinned?'fill':'regular'}/></button><button type="button" className="knowledge-card-main" aria-label={`打开知识库 ${space.name}`} onClick={()=>go(url(space.id,section))}><div><LibraryIcon library={space} size={26}/><strong title={space.name}>{space.name}</strong></div><p title={space.description||''}>{space.description||'暂无简介'}</p></button>{canManage&&<button type="button" className="knowledge-card-settings" aria-label={`知识库设置 ${space.name}`} title="知识库设置" onClick={()=>openSettings(space)}><Gear size={16}/><span>知识库设置</span></button>}</article>;
 }
 
-export function LibraryPage({state,userId,section,query,setQuery,startCreate,startUpload,onCreateLibrary,update,openSettings,say}){
+export function LibraryPage({state,userId,section,startCreate,startUpload,onCreateLibrary,update,openSettings,say}){
   const [scope,setScope]=useState('all');
-  const visible=librariesForView(state,userId,section).filter(s=>!(section==='shared'&&scope==='created'&&!didShareLibrary(state,s,userId))&&!(section==='shared'&&scope==='joined'&&responsibleId(s)===userId)&&`${s.name}${s.description||''}`.includes(query.trim()));
+  const visible=librariesForView(state,userId,section).filter(s=>!(section==='shared'&&scope==='created'&&!didShareLibrary(state,s,userId))&&!(section==='shared'&&scope==='joined'&&responsibleId(s)===userId));
   const editable=writableLibraries(state,userId,section).length>0;
   const cardProps={state,userId,section,update,openSettings,say};
 
-  return <><header className="knowledge-home-header"><h1>{titles[section]}</h1><label><MagnifyingGlass size={17} /><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="搜索文档" aria-label="搜索文档" /></label></header><div className="knowledge-actions with-upload kb-shortcut-actions"><CreateMenu variant="library" disabled={!editable} reason="当前没有可编辑的位置，请先创建知识库或获得编辑权限" onChoose={format=>startCreate(format,{category:section})}/><UploadMenu variant="library" disabled={!editable} reason="没有可编辑的位置" onChoose={kind=>startUpload({kind})}/><button type="button" className="kb-shortcut-create-library" onClick={onCreateLibrary}><span className="kb-shortcut-icon" aria-hidden="true"><BookBookmark size={22} weight="fill"/></span><span><strong>新建知识库</strong></span><CaretRight size={16}/></button></div>
+  return <><header className="knowledge-home-header"><h1>{titles[section]}</h1></header><div className="knowledge-actions with-upload kb-shortcut-actions"><CreateMenu variant="library" disabled={!editable} reason="当前没有可编辑的位置，请先创建知识库或获得编辑权限" onChoose={format=>startCreate(format,{category:section})}/><UploadMenu variant="library" disabled={!editable} reason="没有可编辑的位置" onChoose={kind=>startUpload({kind})}/><button type="button" className="kb-shortcut-create-library" onClick={onCreateLibrary}><span className="kb-shortcut-icon" aria-hidden="true"><BookBookmark size={22} weight="fill"/></span><span><strong>新建知识库</strong></span><CaretRight size={16}/></button></div>
 
     <section className="all-library-section" aria-label="全部知识库"><div className="knowledge-section-heading"><div className="knowledge-heading-main"><h2>全部知识库</h2>{section==='shared'&&<div className="knowledge-scope-tabs" role="tablist">{[['all','全部'],['created','我共享的'],['joined','与我共享']].map(([value,label])=><button className={scope===value?'active':''} type="button" key={value} onClick={()=>setScope(value)}>{label}</button>)}</div>}</div></div>
       <div className="knowledge-grid library-wide-grid">{visible.map(space=><LibraryCard key={space.id} {...cardProps} space={space}/>)}</div>
-      {!visible.length&&<Empty title={query.trim()?'没有找到相关知识库':section==='shared'?'暂无共享知识库':section==='plaza'?'暂无全员可见内容':'还没有自己的知识库'} body={query.trim()?'换一个关键词试试。':section==='shared'?'创建共享知识库，或请协作者授权公司、部门或人员。':section==='plaza'?'创建广场知识库，或将内容移动到有编辑权限的广场目录。':'新建一个知识库，开始积累自己的资料。'}/>}</section></>;
+      {!visible.length&&<Empty title={section==='shared'?'暂无共享知识库':section==='plaza'?'暂无全员可见内容':'还没有自己的知识库'} body={section==='shared'?'创建共享知识库，或请协作者授权公司、部门或人员。':section==='plaza'?'创建广场知识库，或将内容移动到有编辑权限的广场目录。':'新建一个知识库，开始积累自己的资料。'}/>}</section></>;
 }
 
 export function SpaceDetail({state,userId,space,folderPath:requestedPath,detailAiOpen,setDetailAiOpen,openAccess,openShare,openSettings,onHandover,onAction,onBatch,locateId,origin,startCreate,startUpload,folderDraft,onCloseFolder,onFolderCreated,openDoc,say,update}){
@@ -77,12 +105,12 @@ export function SpaceDetail({state,userId,space,folderPath:requestedPath,detailA
   const rowAction=(action,node,options)=>{if(action==='rename')setRenameId(node.id);else onAction(action,node,options);};
   const changeSort=value=>{try{update(current=>{if(current.viewAs!==userId||!librariesForView(current,userId).some(item=>item.id===space.id))throw Error('当前知识库已不可访问');return {...current,directorySortByUser:{...current.directorySortByUser,[userId]:{...current.directorySortByUser?.[userId],[space.id]:value}}};});}catch(error){say(error.message);}};
   return <div className={`knowledge-library-detail ${tone}`}><header className="knowledge-detail-toolbar"><button type="button" onClick={()=>go(`/${view}`)}><CaretRight size={17}/><span>{titles[view]}</span></button><div><label className="kb-inline-identity">身份<select aria-label="当前身份" value={userId} onChange={e=>update(s=>({...s,viewAs:e.target.value}))}>{state.members.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label>{libraryType(space)!=='personal'&&<button type="button" disabled={!role.manage} title={!role.manage?'需要管理权限':undefined} onClick={()=>openShare(space,'space')}><ShareNetwork size={17}/>分享</button>}<button type="button" disabled={!role.manage} title={!role.manage?'需要管理权限':undefined} onClick={()=>openSettings(space)}><Gear size={17}/>设置</button>{libraryType(space)!=='personal'&&onHandover&&<FileMenu state={state} node={space} userId={userId} menuItems={[{action:'handover',label:'交接负责人',reason:handoverReason(state,space.id,'space',userId)}]} onAction={(action,target)=>{if(action==='handover')onHandover(target,'space');}}/>}</div></header>
-    <section className="knowledge-detail-hero"><span className="knowledge-detail-icon"><LibraryIcon library={space} size={54}/></span><div><h1 title={space.name}>{space.name}</h1><p title={space.description||''}>{space.description}</p><small className="library-manager-line"><UserCircle size={16}/>管理人：{memberName(state,responsibleId(space))}</small><small className="library-accessible-count">你可访问 {actualNodes(state,space,userId,view).length} 项内容</small></div></section>
+    <section className={`knowledge-detail-hero${space.cover&&space.cover.key!=='original'?' has-library-cover':''}${responsibleId(space)===userId?' can-edit-cover':''}`}><LibraryCoverSurface cover={space.cover} className="library-detail-hero-cover"/><span className="knowledge-detail-icon"><LibraryIcon library={space} size={54}/></span><div><h1 title={space.name}>{space.name}</h1><p title={space.description||''}>{space.description}</p><small className="library-manager-line"><UserCircle size={16}/>负责人：{memberName(state,responsibleId(space))}</small><small className="library-accessible-count">你可访问 {actualNodes(state,space,userId,view).length} 项内容</small></div>{responsibleId(space)===userId&&<LibraryCoverEditor space={space} userId={userId} update={update} say={say}/>}</section>
     <div className="knowledge-detail-list-toolbar"><nav className="knowledge-detail-breadcrumb" aria-label="文件夹路径"><button className={!folderPath.length?'current':''} type="button" onClick={()=>changeFolder([])}>全部</button>{folderPath.map((id,i)=><span key={id}><CaretRight size={16}/><button title={state.nodes.find(n=>n.id===id)?.name} className={i===folderPath.length-1?'current':''} type="button" onClick={()=>changeFolder(folderPath.slice(0,i+1))}>{state.nodes.find(n=>n.id===id)?.name}</button></span>)}</nav><div><label><MagnifyingGlass size={16}/><input aria-label="搜索当前目录" value={search} onChange={e=>setSearch(e.target.value)} placeholder="搜索当前文件夹"/></label>{canCreateHere&&<UploadMenu onChoose={kind=>startUpload({parentId:folderId,kind})}/>}<CreateMenu disabled={!canCreateHere} reason={folderIsPath?'此目录仅用于路径导航':'需要当前位置的编辑权限'} onChoose={format=>startCreate(format,{view,lockedSpaceId:space.id,spaceId:space.id,parentId:folderId})}/><DirectorySortMenu value={sort} onChange={changeSort}/></div></div>
     {picked.length>0&&<div className="batch-toolbar" role="toolbar" aria-label="批量操作"><span>{selectionSummary(state,picked)}</span>{[['move','移动'],['copy','复制'],['delete','删除'],['download','下载']].map(([action,label])=>{const reason=batchReason(action);return <button key={action} type="button" disabled={!!reason} title={reason||`批量${label}`} onClick={()=>onBatch(action,picked,space.id,()=>setSelected([]))}>{label}</button>;})}<button type="button" onClick={()=>setSelected([])}>取消选择</button></div>}
     {folderDraft?.spaceId===space.id&&folderDraft.parentId===folderId&&<InlineFolder key={folderDraft.token} state={state} userId={userId} context={folderDraft} update={update} onClose={onCloseFolder} onCreated={onFolderCreated}/>}
     <div className={`knowledge-detail-table selectable expandable-file-table ${picked.length?'selection-mode':''}`} style={{'--file-tree-extra':`${Math.min(Math.max(0,...entries.map(row=>row.depth))*16,96)}px`}}>
-      <div className="knowledge-detail-row head"><label className="row-checkbox"><input ref={allBox} type="checkbox" aria-label="全选当前筛选结果" checked={all} disabled={!selectable.length} onChange={()=>setSelected(all?[]:treeRoots(state,selectable))}/></label><span>名称</span><span>负责人</span><span>修改时间</span><span>类型</span><span aria-hidden="true"/></div>
+      <div className="knowledge-detail-row head"><label className="row-checkbox"><input ref={allBox} type="checkbox" aria-label="全选当前筛选结果" checked={all} disabled={!selectable.length} onChange={()=>setSelected(all?[]:treeRoots(state,selectable))}/></label><span>名称</span><span>负责人</span><span>更新时间</span><span>类型</span><span aria-hidden="true"/></div>
       {entries.map(row=>{
         if(row.empty)return <div className="directory-tree-empty" key={`empty-${row.id}`} style={{'--tree-depth':row.depth}}>{row.pathOnly?'暂无可访问内容':'此文件夹为空'}</div>;
         const {node,depth}=row,isFolder=node.type==='folder',isExpanded=isFolder&&expanded.includes(node.id)&&!search.trim();

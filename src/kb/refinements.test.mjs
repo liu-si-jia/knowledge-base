@@ -6,7 +6,7 @@ import { createContent } from './contentCreation.js';
 import { accessFromSubjects, companyId } from './permissions.js';
 import { contentRights, effectiveAccess, accessFingerprint, saveEntityAccess, permissionLayers, migrateAccess, librariesForView, switchNodePermissionMode } from './access.js';
 import { addCollaborators, savePermissionDetails } from './permissionOperations.js';
-import { pinnedRecords, visiblePins, pinnedLibrariesForView, togglePin, reorderPin, reorderViewPin, recentVisits, visitContent, homeEntries } from './personalization.js';
+import { pinnedRecords, visiblePins, pinnedLibrariesForView, togglePin, toggleNodePin, isContentPinned, reorderPin, reorderViewPin, recentVisits, visitContent, homeEntries, pinKey } from './personalization.js';
 const person=(id,role)=>({type:'person',id,role}),empty=state=>accessFromSubjects(state,[]);
 function fixture(){let s=normalizeState(seedState());let r=createLibrary(s,{name:'分层授权验收',initializer:'shared',access:accessFromSubjects(s,[person('chen-ke','viewer'),person('zhao-heng','editor')])},s.meId);s=r.state;const library=r.library;const add=(format,name,parentId='')=>{const r=createContent(s,{format,name,parentId,spaceId:library.id},s.meId);s=r.state;return r.node;};const folder=add('folder','资料'),file=add('doc','授权说明',folder.id),other=add('doc','另一个文件');return {s,library,folder,file,other};}
 const setLocal=(s,id,subjects)=>saveEntityAccess(s,{id,permissionMode:subjects.length?'custom':'inherit',localAccess:accessFromSubjects(s,subjects),convertedBy:subjects.length?s.meId:undefined},s.meId);
@@ -98,4 +98,27 @@ test('置顶切换不再写入历史分类页排序，侧栏持久化独立',()=
 test('公司授权不改变置顶的固定类型，删除失权隐藏而不重置记录',()=>{
  let {s,library}=fixture();s=togglePin(s,s.meId,library.id,'shared');s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[{type:'company',id:companyId(s),role:'viewer'}])},s.meId);
  assert.equal(visiblePins(s,s.meId).find(p=>p.library.id===library.id).view,'shared');s.spaces=s.spaces.map(l=>l.id===library.id?{...l,deletedAt:'deleted'}:l);assert.equal(visiblePins(s,s.meId).some(p=>p.library.id===library.id),false);assert.ok(pinnedRecords(s,s.meId).some(p=>p.spaceId===library.id));
+});
+
+
+test('文件和文件夹可与知识库一并置顶、按身份隔离，并支持混合拖拽排序',()=>{
+  let {s,library,folder,file}=fixture();
+  s=togglePin(s,s.meId,library.id,'shared');
+  s=toggleNodePin(s,s.meId,folder.id);
+  s=toggleNodePin(s,s.meId,file.id);
+  assert.equal(isContentPinned(s,s.meId,file.id),true);
+  const pins=visiblePins(s,s.meId);
+  assert.ok(pins.some(p=>p.kind==='library'&&p.library.id===library.id));
+  assert.ok(pins.some(p=>p.kind==='node'&&p.node.id===folder.id));
+  assert.ok(pins.some(p=>p.kind==='node'&&p.node.id===file.id));
+  assert.equal(visiblePins(s,'chen-ke').some(p=>p.kind==='node'&&p.node.id===file.id),false);
+  const fileKey=pinKey({spaceId:library.id,nodeId:file.id});
+  const libraryKey=library.id;
+  s=reorderPin(s,s.meId,fileKey,libraryKey);
+  const keys=visiblePins(s,s.meId).map(p=>p.key);
+  assert.ok(keys.indexOf(fileKey)>=0&&keys.indexOf(libraryKey)>=0);
+  assert.equal(keys[keys.indexOf(libraryKey)-1],fileKey);
+  s=toggleNodePin(s,s.meId,file.id);
+  assert.equal(isContentPinned(s,s.meId,file.id),false);
+  assert.ok(pinnedRecords(s,s.meId).some(p=>p.spaceId===library.id&&!p.nodeId));
 });

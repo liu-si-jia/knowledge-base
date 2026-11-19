@@ -5,8 +5,9 @@ import { X, CaretRight } from '@phosphor-icons/react';
 import { SCOPE_LABELS, accessFingerprint, effectiveAccess, parentAccess, spaceAccess, saveEntityAccess, contentRights, libraryRights, scopeSummary, permissionLayers, displayedResponsibles, libraryLocalAccess, libraryType, plazaFloor, LIBRARY_TYPES, switchNodePermissionMode, permissionModeFor } from './access.js';
 import { initialAccess, toSubjectAccess, accessFromSubjects } from './permissions.js';
 import { GrantFields, GrantNotices } from './GrantFields.jsx';
-import AccessManagerFields from './AccessManagerFields.jsx';
+import AccessManagerFields, { ModeSwitchConfirm } from './AccessManagerFields.jsx';
 import { managementDraftFromShare } from './collaboratorRules.js';
+import { shareInheritGuidance, SHARE_NO_MANAGE_COPY } from './shareGuidance.js';
 import { createLibrary } from './libraryCreation.js';
 import { useLocationDialog } from './LocationPicker.jsx';
 import { persistLibraryIcon } from './libraryIcons.jsx';
@@ -58,17 +59,37 @@ function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSave
 export function ShareDialog(props){return props.item?<ShareController {...props}/>:<Unavailable onClose={props.onClose}/>;}
 function ShareController({state,userId,item,entity='node',update,onClose,onSaved,afterMove=false,onHandover}){
   const [pending,setPending]=useState([]),[mode,setMode]=useState('share'),fingerprint=useRef(accessFingerprint(state,item,entity));
-  let target;try{target=permissionTarget(state,item.id,entity,userId);}catch{return <Unavailable onClose={onClose} message="只有管理者可以添加协作者"/>;}
+  let target;try{target=permissionTarget(state,item.id,entity,userId);}catch{return <Unavailable onClose={onClose} message={entity==='node'?SHARE_NO_MANAGE_COPY:'只有管理者可以添加协作者'}/>;}
   if(libraryType(target.library)==='personal')return <Unavailable onClose={onClose} message="个人内容仅本人管理，请先移动到共享知识库或知识广场再添加协作者"/>;
   const merged=managementDraftFromShare(target,entity);
   if(mode==='permissions')return <AccessDialog state={state} userId={userId} item={item} entity={entity} update={update} initialDraft={merged} initialLocal={entity==='node'?merged:undefined} onHandover={onHandover} expectedOverride={fingerprint.current} fromShare onClose={()=>setMode('share')} onSaved={visibility=>{onSaved(visibility);onClose();}}/>;
   return <ShareForm afterMove={afterMove} state={state} userId={userId} item={item} entity={entity} target={target} pending={pending} setPending={setPending} expected={fingerprint.current} update={update} onClose={onClose} onManage={()=>setMode('permissions')} onSaved={onSaved}/>;
 }
 function ShareForm({state,userId,item,entity,afterMove,target,pending,setPending,expected,update,onClose,onManage,onSaved}){
-  const root=useRef(null),[error,setError]=useState('');const {requestClose,prompt}=useDiscardGuard(pending.length>0,onClose);useLocationDialog(root,requestClose);
-  const commit=()=>{try{let visibility;update(s=>{if(s.viewAs!==userId)throw Error('当前用户已变化，请重新操作');const next=addCollaborators(s,{id:item.id,entity,subjects:pending,expected,confirmedIndependent:true},userId);visibility=entity==='space'?spaceAccess(next,next.spaces.find(n=>n.id===item.id)).visibility:effectiveAccess(next,next.nodes.find(n=>n.id===item.id)).visibility;return next;});onSaved(visibility);onClose();}catch(err){setError(err.message);}};
-  const submit=e=>{e.preventDefault();if(!pending.length){setError('请选择要添加的协作者');return;}commit();};
-  return <>{prompt}<div className="knowledge-product-dialog-backdrop access-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)requestClose();}}><form ref={root} className="knowledge-product-dialog access-dialog share-dialog" role="dialog" aria-modal="true" aria-label="分享" onSubmit={submit}><header><div><h2>分享</h2><p>{item.name}</p></div><button type="button" className="access-close" aria-label="关闭分享" onClick={requestClose}><X size={19}/></button></header>{afterMove&&<p className="access-note">移动已完成；关闭此弹窗不会撤销移动。</p>}<div className="share-intro"><span>邀请协作者</span><button type="button" title="查看、修改或移除已有授权" onClick={onManage}>权限管理 <CaretRight size={13}/></button></div><GrantFields state={state} value={accessFromSubjects(state,pending)} onChange={value=>{setPending(value.subjects);setError('');}} ownerIds={target.owners} showOwners={false} heading="待新增协作者" explanationContext={{local:(entity==='node'?target.layers.local:target.access).subjects,inherited:target.layers?.inherited?.subjects||[],excluded:target.layers?.excluded||[],sourceLabel:item.parentId?'父级目录':'知识库'}} blocked={[...(entity==='node'?[...target.layers.local.subjects,...(target.layers.inherited?.subjects||[])]:target.access.subjects),...plazaFloor(state,target.library)]}/>{entity==='node'&&permissionModeFor(item)==='inherit'&&<p className="access-note decision-note">当前为继承模式，需在权限管理中转为自定义后才能添加协作者。</p>}<p className="access-note decision-note" hidden={!pending.length}>本次新增 {pending.length} 项授权，已有授权保持不变。</p>{error&&<p className="access-error" role="alert">{error}</p>}<footer><button type="button" onClick={requestClose}>取消</button><button type="submit" disabled={!pending.length}>添加协作者</button></footer></form></div></>;
+  const root=useRef(null),[error,setError]=useState(''),[modePrompt,setModePrompt]=useState(false);
+  const {requestClose,prompt}=useDiscardGuard(pending.length>0,onClose);useLocationDialog(root,requestClose);
+  const guidance=shareInheritGuidance(state,item,entity,userId);
+  const canAdd=guidance.canAdd;
+  const commit=()=>{try{let visibility;update(s=>{if(s.viewAs!==userId)throw Error('当前用户已变化，请重新操作');const latest=s[entity==='space'?'spaces':'nodes'].find(n=>n.id===item.id);const next=addCollaborators(s,{id:item.id,entity,subjects:pending,expected:accessFingerprint(s,latest,entity),confirmedIndependent:true},userId);visibility=entity==='space'?spaceAccess(next,next.spaces.find(n=>n.id===item.id)).visibility:effectiveAccess(next,next.nodes.find(n=>n.id===item.id)).visibility;return next;});onSaved(visibility);onClose();}catch(err){setError(err.message);}};
+  const submit=e=>{e.preventDefault();if(!canAdd){setError(guidance.message||SHARE_NO_MANAGE_COPY);return;}if(!pending.length){setError('请选择要添加的协作者');return;}commit();};
+  const confirmSwitch=()=>{
+    try{
+      update(s=>{
+        if(s.viewAs!==userId)throw Error('当前用户已变化，请重新操作');
+        const current=s.nodes.find(n=>n.id===item.id);
+        const result=switchNodePermissionMode(s,current,'custom',userId);
+        return saveEntityAccess(s,{id:item.id,permissionMode:result.permissionMode,localAccess:result.localAccess,convertedBy:result.convertedBy},userId);
+      });
+      setModePrompt(false);setError('');
+    }catch(err){setModePrompt(false);setError(err.message);}
+  };
+  return <>{prompt}{modePrompt&&<ModeSwitchConfirm nextMode="custom" onCancel={()=>setModePrompt(false)} onConfirm={confirmSwitch}/>}<div className="knowledge-product-dialog-backdrop access-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)requestClose();}}><form ref={root} className="knowledge-product-dialog access-dialog share-dialog" role="dialog" aria-modal="true" aria-label="分享" onSubmit={submit}><header><div><h2>分享</h2><p>{item.name}</p></div><button type="button" className="access-close" aria-label="关闭分享" onClick={requestClose}><X size={19}/></button></header>{afterMove&&<p className="access-note">移动已完成；关闭此弹窗不会撤销移动。</p>}<div className="share-intro"><span>邀请协作者</span><button type="button" title="查看、修改或移除已有授权" onClick={onManage}>权限管理 <CaretRight size={13}/></button></div>
+    {guidance.kind==='inherit-manage'&&<div className="share-inherit-guide"><p>{guidance.message}</p><button type="button" onClick={()=>setModePrompt(true)}>转为自定义</button></div>}
+    {guidance.kind==='inherit-no-manage'&&<p className="share-inherit-blocked" role="status">{SHARE_NO_MANAGE_COPY}</p>}
+    {canAdd&&<GrantFields state={state} value={accessFromSubjects(state,pending)} onChange={value=>{setPending(value.subjects);setError('');}} ownerIds={target.owners} showOwners={false} heading="待新增协作者" explanationContext={{local:(entity==='node'?target.layers.local:target.access).subjects,inherited:target.layers?.inherited?.subjects||[],excluded:target.layers?.excluded||[],sourceLabel:item.parentId?'父级目录':'知识库'}} blocked={[...(entity==='node'?[...target.layers.local.subjects,...(target.layers.inherited?.subjects||[])]:target.access.subjects),...plazaFloor(state,target.library)]}/>}
+    {canAdd&&<p className="access-note decision-note" hidden={!pending.length}>本次新增 {pending.length} 项授权，已有授权保持不变。</p>}
+    {error&&<p className="access-error" role="alert">{error}</p>}
+    <footer><button type="button" onClick={requestClose}>取消</button><button type="submit" disabled={!canAdd||!pending.length}>添加协作者</button></footer></form></div></>;
 }
 export function LibraryCreateDialog({state,userId,view='personal',chooseInitializer=false,update,onClose,onCreated}){
   const [name,setName]=useState(''),[description,setDescription]=useState(''),[initializer,setInitializer]=useState(view),[drafts,setDrafts]=useState(()=>Object.fromEntries(['personal','shared','plaza'].map(v=>[v,initialAccess(state,v)]))),[error,setError]=useState(''),[icon,setIcon]=useState({kind:'preset',key:'book'}),[cover,setCover]=useState({kind:'preset',key:'mist'}),[assetReading,setAssetReading]=useState(false),[busy,setBusy]=useState(false);

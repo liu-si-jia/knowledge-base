@@ -40,7 +40,7 @@ function BatchRolePicker({label,rows,onChange,allowRemove=true,mode='custom'}){
   return <PermissionRolePicker label={label} value={current} triggerLabel="修改权限" options={[...options.map(option=>({...option})),...actions.map((action,index)=>({...action,danger:true,separated:index===0}))]} onChange={onChange} groupLabel="批量修改权限"/>;
 }
 
-function ModeSwitchConfirm({nextMode,onCancel,onConfirm}){
+export function ModeSwitchConfirm({nextMode,onCancel,onConfirm}){
   const root=useRef(null);
   useLocationDialog(root,onCancel);
   const copy=MODE_SWITCH_COPY[nextMode];
@@ -109,7 +109,7 @@ export default function AccessManagerFields({
       })}
     </div>}
     {allowModeSwitch&&<div className="grant-mode-bar">
-      <p>当前：{inheritLocked?'继承权限':'自定义权限'}</p>
+      <div className="grant-mode-status"><span>当前</span><strong>{inheritLocked?'继承权限':'自定义权限'}</strong></div>
       <button type="button" className="grant-mode-switch" onClick={()=>setModePrompt(inheritLocked?'custom':'inherit')}>{inheritLocked?'转为自定义':'改回继承'}</button>
     </div>}
     <div className="grant-heading">

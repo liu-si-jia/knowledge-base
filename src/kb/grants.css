@@ -106,12 +106,19 @@
 
 .grant-responsibility{margin:0 0 12px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fbfcfe}
 .grant-responsibility .grant-row{min-height:54px}
-.grant-mode-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}
-.grant-mode-bar>p{margin:0;font-size:12px;color:#5b6b82}
-.grant-mode-switch{height:28px;padding:0 10px;border:0;border-radius:5px;background:#edf4ff;color:#3e7bd7;font:inherit;font-size:11px;cursor:pointer}
+.grant-mode-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;box-sizing:border-box;margin:16px 0;padding:12px 16px;border:1px solid #e6edf5;border-radius:10px;background:#f4f7fb}
+.grant-mode-bar .grant-mode-status{display:flex;align-items:baseline;gap:8px;min-width:0}
+.grant-mode-bar .grant-mode-status>span{font-size:12px;color:#6b7c90}
+.grant-mode-bar .grant-mode-status>strong{font-size:13px;color:#243547;font-weight:650}
+.grant-mode-switch{height:32px;padding:0 12px;border:0;border-radius:8px;background:#fff;color:#2b6ae0;box-shadow:inset 0 0 0 1px #d5e3f6;font:inherit;font-size:12px;cursor:pointer}
+.grant-mode-switch:hover{background:#edf4ff}
 .knowledge-product-dialog .grant-mode-bar,.knowledge-product-dialog .grant-responsibility{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:0;margin:0 0 12px}
-.knowledge-product-dialog .grant-mode-bar{flex-direction:row;align-items:center;margin:0 0 10px}
-.knowledge-product-dialog .grant-mode-switch{background:#edf4ff;color:#3e7bd7;border:0;height:28px;padding:0 10px}
+.knowledge-product-dialog .grant-mode-bar{flex-direction:row;align-items:center;margin:16px 0}
+.knowledge-product-dialog .grant-mode-switch{background:#fff;color:#2b6ae0;border:0;height:32px;padding:0 12px}
+.share-inherit-guide{margin:0 0 12px;padding:12px 14px;border:1px solid #e6edf5;border-radius:10px;background:#f7f9fc}
+.share-inherit-guide p{margin:0;font-size:13px;line-height:1.7;color:#3d4f66}
+.share-inherit-guide button{margin-top:10px;height:32px;padding:0 12px;border:0;border-radius:8px;background:#3478f6;color:#fff;font:inherit;font-size:12px;cursor:pointer}
+.share-inherit-blocked{margin:0 0 12px;padding:12px 14px;border-radius:10px;background:#f8f1f1;color:#9b3a32;font-size:13px}
 .permission-mode-backdrop{z-index:165}
 .subject-picker.permission-mode-confirm{width:min(480px,calc(100vw - 24px))}
 .permission-mode-confirm>p{margin:0 0 18px;font-size:13px;line-height:1.8;color:#526781}

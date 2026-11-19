@@ -4,6 +4,7 @@ import { folderTrail, validateDestination, writableFolders, writableLibraries } 
 import { libraryRights } from './access.js';
 import { loadState } from './store.js';
 import ContentIcon from './ContentIcon.jsx';
+import { LibraryIcon } from './libraryIcons.jsx';
 
 export const LOCATION_VIEWS=[['personal','个人知识库',House],['shared','共享知识库',UsersThree],['plaza','知识广场',Globe]];
 export function locationLabel(state,spaceId,parentId){
@@ -60,7 +61,7 @@ export function LocationBrowser({state,userId,value,onChange,lockedSpaceId='',lo
     <div className="location-picker-columns"><nav className="location-categories" aria-label="知识空间类型">{LOCATION_VIEWS.map(([id,label,Icon])=><button type="button" key={id} className={view===id?'active':''} aria-pressed={view===id} disabled={!!lockedView&&lockedView!==id||!!allowedViews.length&&!allowedViews.includes(id)} title={allowedViews.length&&!allowedViews.includes(id)?'请选择共享知识库或知识广场':lockedView&&lockedView!==id?'当前操作仅可选择当前知识空间':label} onClick={()=>{if(view!==id){onChange({view:id,spaceId:'',parentId:''});setQuery('');}}}><Icon size={18}/><span>{label}</span></button>)}</nav>
       <div className="location-tree" aria-label="知识库和文件夹树">{!view?<div className="location-empty"><Books size={28}/><strong>先选择知识空间</strong><span>从左侧选择个人知识库、共享知识库或知识广场。</span></div>:!trees.length?<div className="location-empty"><FolderOpen size={28}/><strong>{keyword?'没有找到匹配的位置':'暂无可编辑的位置'}</strong><span>{keyword?'换个关键词试试，搜索仅包含可用的知识库和文件夹。':'请先创建知识库，或联系管理者获取编辑权限。'}</span></div>:trees.map(tree=>{
         const {space}=tree,reason=destinationReason(tree.space.id,''),children=tree.folders.filter(n=>!n.parentId),open=!!keyword||expanded.has(space.id),active=selected?.spaceId===space.id&&!selected.parentId;
-        return <div key={space.id}><div className={`location-tree-row library ${active?'selected':''}`} style={{'--depth':0}}>{children.length?caret(space.id,`知识库 ${space.name}`,open):<span className="location-caret-slot"/>}<button type="button" className="location-node" aria-pressed={active} aria-label={`保存到知识库 ${space.name}`} disabled={!tree.rootEditable||!!reason} title={reason||(tree.rootEditable?`${space.name} / 根目录`:'根目录没有编辑权限，请展开并选择获授权的文件夹')} onClick={()=>choose(space.id)}><span>{space.name}</span><small>{tree.rootEditable?'根目录':'仅路径'}</small>{active&&<Check size={15}/>}</button></div>{open&&children.map(n=>renderFolder(tree,n,1))}</div>;
+        return <div key={space.id}><div className={`location-tree-row library ${active?'selected':''}`} style={{'--depth':0}}>{children.length?caret(space.id,`知识库 ${space.name}`,open):<span className="location-caret-slot"/>}<button type="button" className="location-node" aria-pressed={active} aria-label={`保存到知识库 ${space.name}`} disabled={!tree.rootEditable||!!reason} title={reason||(tree.rootEditable?space.name:'该知识库没有编辑权限，请展开并选择获授权的文件夹')} onClick={()=>choose(space.id)}><LibraryIcon library={space} size={16}/><span>{space.name}</span>{!tree.rootEditable&&<small>仅路径</small>}{active&&<Check size={15}/>}</button></div>{open&&children.map(n=>renderFolder(tree,n,1))}</div>;
       })}</div></div>
   </>;
 }

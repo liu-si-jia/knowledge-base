@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { homeColumns, toggleHomeColumn, reorderHomeColumn } from './homeDisplay.js';
 
-test('主页默认显示创建时间和最近访问，修改时间默认隐藏，个人设置不污染默认值',()=>{
+test('主页默认显示创建时间和最近访问，更新时间默认隐藏，个人设置不污染默认值',()=>{
   const state={};const columns=homeColumns(state,'one');
   assert.deepEqual(columns.filter(c=>!c.hidden).map(c=>c.id),['location','owner','createdAt','visitedAt']);
   columns[0].hidden=true;assert.equal(homeColumns(state,'one')[0].hidden,undefined);
