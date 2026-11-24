@@ -6,6 +6,7 @@ import { TextDecoder, TextEncoder } from 'node:util';
 import { JSDOM } from 'jsdom';
 import { seedState, normalizeState } from './store.js';
 import { saveEntityAccess, switchNodePermissionMode, contentRights, librariesForView, displayedResponsibles } from './access.js';
+import { roleLabel } from './store.js';
 import { createLibrary } from './libraryCreation.js';
 import { createContent } from './contentCreation.js';
 import { accessFromSubjects, PERMISSION_ROLES, roleRights } from './permissions.js';
@@ -39,8 +40,13 @@ test('四档权限、负责人、继承与自定义可双向切换，添加协�
   assert.equal(roleRights('viewer').view && !roleRights('viewer').download && !roleRights('viewer').edit && !roleRights('viewer').manage, true);
   assert.equal(roleRights('downloader').download && !roleRights('downloader').edit, true);
   assert.equal(roleRights('editor').edit && roleRights('editor').download && !roleRights('editor').manage, true);
-  assert.equal(roleRights('manager').manage && roleRights('manager').edit && roleRights('manager').download && roleRights('manager').view, true);
+  assert.equal(roleRights('manager').manage && roleRights('manager').edit && roleRights('manager').download && roleRights('manager').view && roleRights('manager').share, true);
   const node = get(state, id);
+  const managerRights = contentRights(state, node, state.meId);
+  assert.equal(managerRights.share, true);
+  assert.equal(roleLabel(managerRights), '查看、编辑、管理、下载');
+  assert.equal(roleLabel(managerRights).includes('分享'), false);
+  assert.equal(roleLabel({ view: true, edit: false, share: false, manage: false, download: false }), '查看');
   assert.equal(displayedResponsibles(state, node, 'node').some(row => row.id === state.meId), true);
   assert.equal(contentRights(state, node, state.meId).manage, true);
   assert.throws(() => switchNodePermissionMode(state, node, 'custom', 'chen-ke'), /管理权限/);
@@ -217,6 +223,8 @@ test.describe('已渲染界面不能打开独立分享，权限管理与导航�
       await click(api, tab);
       assert.equal(tab.getAttribute('aria-selected'), 'true');
       assert.equal(shareControl(document).length, 0);
+      assert.equal(document.body.textContent.includes('分享'), false, label);
+      if (label === '我共享的') assert.match(document.body.textContent, /给自己的内容添加协作者后，会显示在这里。/);
     }
 
     const search = document.querySelector('[aria-label="全局搜索"]');
@@ -273,17 +281,19 @@ test.describe('已渲染界面不能打开独立分享，权限管理与导航�
     const { document } = api.dom.window;
     for (const label of ['全部', '我共享的', '与我共享']) assert.ok(textButton(document, label), label);
     assert.equal(shareControl(document).length, 0);
-    await click(api, textButton(document, '个人知识库'));
-    await click(api, textButton(document, '知识广场'));
-    await click(api, textButton(document, '回收站'));
-    await click(api, textButton(document, '问AI'));
-    await dismissOverlays(api);
-    assert.equal(shareControl(document).length, 0);
+    assert.equal(document.body.textContent.includes('分享'), false);
+    for (const label of ['个人知识库', '知识广场', '回收站', '问AI']) {
+      await click(api, textButton(document, label));
+      if (label === '问AI') await dismissOverlays(api);
+      assert.equal(shareControl(document).length, 0, label);
+      assert.equal(document.body.textContent.includes('分享'), false, label);
+    }
 
     await api.act(async () => api.root.unmount());
     api.root = await mount(api, '#/space/space-handbook?view=shared');
     assert.ok(textButton(document, '设置'));
     assert.equal(shareControl(document).length, 0);
+    assert.equal(document.body.textContent.includes('分享'), false);
     await click(api, document.querySelector('[aria-label="报销需要哪些材料更多操作"]'));
     assert.equal([...document.querySelectorAll('[role="menuitem"]')].some(item => item.textContent.trim() === '分享'), false);
     assert.ok([...document.querySelectorAll('[role="menuitem"]')].some(item => item.textContent.trim() === '权限管理'));
@@ -292,11 +302,11 @@ test.describe('已渲染界面不能打开独立分享，权限管理与导航�
     api.root = await mount(api, '#/doc/doc-faq?view=shared');
     await dismissOverlays(api);
     assert.equal(shareControl(document).length, 0);
-    const capabilityText = [...document.querySelectorAll('button')].map(element => element.textContent).find(text => text.includes('分享'));
-    if (capabilityText) {
-      await click(api, [...document.querySelectorAll('button')].find(element => element.textContent === capabilityText));
-      assert.equal(document.querySelector('[role="dialog"][aria-label="分享"]'), null);
-    }
+    const status = [...document.querySelectorAll('.document-status-left button')].map(element => element.textContent.trim());
+    assert.ok(status.includes('权限：查看、编辑、管理、下载'), status.join(' | '));
+    assert.equal(document.body.textContent.includes('分享'), false);
+    await click(api, [...document.querySelectorAll('.document-status-left button')].find(element => element.textContent.trim() === '权限：查看、编辑、管理、下载'));
+    assert.equal(document.querySelector('[role="dialog"][aria-label="分享"]'), null);
     await click(api, document.querySelector('[aria-label="报销需要哪些材料更多操作"]'));
     const items = [...document.querySelectorAll('[role="menuitem"]')].map(item => item.textContent.trim());
     assert.equal(items.includes('分享'), false);

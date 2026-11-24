@@ -14,7 +14,8 @@ export const ROLE_OPTIONS = [
 const rank = { none: -1, viewer: 0, downloader: 1, editor: 2, manager: 3 };
 
 export function roleLabel(role) {
-  if (role && typeof role === "object") return CAPABILITIES.filter(([k]) => role[k]).map(([,label]) => label).join("、") || "无权限";
+  // Keep the share bit in the rights object. The visible summary does not name it.
+  if (role && typeof role === "object") return CAPABILITIES.filter(([key]) => key !== 'share' && role[key]).map(([,label]) => label).join("、") || "无权限";
   return ROLE_OPTIONS.find(([value]) => value === role)?.[1] || "无权限";
 }
 

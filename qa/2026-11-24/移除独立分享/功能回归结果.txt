@@ -1,0 +1,7 @@
+命令：
+node --test --test-timeout 30000 src/kb/shareRemoval.test.mjs src/kb/accessDialogRevision.test.mjs src/kb/fileActions.test.mjs src/kb/refinements.test.mjs src/kb/interactionReview.test.mjs src/kb/permissionModel.test.mjs src/kb/collaboratorRules.test.mjs
+
+结果：72 通过 / 0 失败 / 0 跳过。耗时 1050.608818 ms。
+完整 node 输出在 qa/2026-11-24/移除独立分享/功能回归.log。仓库 .gitignore 忽略 *.log，所以该文件不进入候选提交。
+
+这是去掉底栏「分享」显示标签并补挂载路径断言之后的复测。制作方自测，不是独立验收。
