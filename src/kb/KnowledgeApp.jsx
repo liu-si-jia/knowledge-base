@@ -18,11 +18,11 @@ import {
   CheckSquare, Clock, Compass, Copy, CornersOut, DotsThree, Eraser, Eye, File, FileText,
   FolderOpen, Globe, House, Lightbulb, LinkSimple, List, ListNumbers, MagnifyingGlass,
   Microphone, Note, PaintRoller, PencilLine, PencilSimple, Plus, ProjectorScreenChart,
-  PushPin, Robot, ShareNetwork, SidebarSimple, Sparkle, StarFour, TextAlignLeft, TextIndent,
+  PushPin, Robot, SidebarSimple, Sparkle, StarFour, TextAlignLeft, TextIndent,
   TextOutdent, Trash, UploadSimple, UserCircle, UsersThree, Warning, X,
 } from "@phosphor-icons/react";
 import { publicAsset } from "../publicAsset.js";
-import AccessDialog, { LibraryCreateDialog, ShareDialog } from "./AccessDialog.jsx";
+import AccessDialog, { LibraryCreateDialog } from "./AccessDialog.jsx";
 import FileMenu from './FileMenu.jsx';
 import PinnedLibraries from './PinnedLibraries.jsx';
 import HomeDisplaySettings from './HomeDisplaySettings.jsx';
@@ -59,7 +59,6 @@ import {
 } from "./store.js";
 
 const spaceUrl = (id, view, folder = "") => `/space/${id}?view=${view}${folder ? `&folder=${folder}` : ""}`;
-const accessSavedText = () => '协作者权限已保存，知识库类型保持不变';
 const CARD_TONES = ["", "ice", "night", "amber"];
 const CARD_ICONS = [FolderOpen, Briefcase, Lightbulb, Archive];
 
@@ -133,7 +132,6 @@ export function KnowledgeApp() {
   const uploadJobs=visibleUploadTasks(state,state.viewAs);
   const uploadInput=useRef(null),folderUploadInput=useRef(null),pendingUpload=useRef(null);
   const [relocateContext, setRelocateContext] = useState(null);
-  const [shareAfterMove,setShareAfterMove]=useState(null);
   const [libraryDialog, setLibraryDialog] = useState(false);
   const [accessTarget, setAccessTarget] = useState(null);
   const [handoverTarget,setHandoverTarget]=useState(null);
@@ -175,14 +173,6 @@ export function KnowledgeApp() {
     go(`/doc/${id}?view=${origin}${safePath.length ? `&folder=${safePath.at(-1)}` : ""}`);
   };
   const openAccess = (item, entity = "node") => setAccessTarget({ id: item.id, entity });
-  const openShare = (item, entity = 'node') => {
-    const library=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId);
-    if(libraryType(library)==='personal'){
-      if(entity==='space'){say('个人知识库不能直接共享，请移动需要协作的文件或文件夹');return;}
-      setConfirm({title:'个人内容仅本人可见',body:'协作前请先移动到共享知识库或知识广场。移动后成为组织资料，个人库不再保留原件，继承目标位置权限，且原件不能移回个人知识库。',confirmText:'移动并继续分享',action:()=>openRelocate(item,'move','personal',true)});return;
-    }
-    setAccessTarget({id:item.id,entity,mode:'share'});
-  };
   const openHandover=(item,entity='node')=>{const reason=handoverReason(loadState(),item.id,entity,userId);if(reason){say(reason);return;}setHandoverTarget({id:item.id,entity});};
   const openSettings = item => setAccessTarget({id:item.id,entity:'space',mode:'settings'});
   const section = location.path === "plaza" ? "plaza" : location.path === "personal" ? "personal" : location.path === "shared" ? "shared" : "";
@@ -238,20 +228,11 @@ export function KnowledgeApp() {
     say(`已创建${contentLabel(node)}「${node.name}」。`);
     if (node.type === "folder") go(spaceUrl(node.spaceId, contentView(state, node, userId, destination.view || createContext?.view), node.parentId));
   };
-  const openRelocate = (node, mode, view = "", sharing=false) => {
-    try { const current=loadState(),source=relocationSource(current,node.id,mode,userId).node;setRelocateContext({id:source.id,mode,spaceId:source.spaceId,parentId:source.parentId||"",name:source.name,view,sharing}); }
+  const openRelocate = (node, mode, view = "") => {
+    try { const current=loadState(),source=relocationSource(current,node.id,mode,userId).node;setRelocateContext({id:source.id,mode,spaceId:source.spaceId,parentId:source.parentId||"",name:source.name,view}); }
     catch (error) { say(error.message); }
   };
-  const relocationDialog = relocateContext && <RelocateDialog state={state} userId={userId} context={relocateContext} update={update} onClose={() => setRelocateContext(null)} onSaved={(text,node)=>{const latest=loadState(),view=contentView(latest,node,userId),library=latest.spaces.find(s=>s.id===node.spaceId);if(relocateContext.sharing){const destination=spaceUrl(node.spaceId,view,node.parentId);if(libraryType(library)==='shared'){setShareAfterMove({id:node.id,route:destination,userId});say('已移动到共享知识库，请继续邀请协作者');}else say('已移至知识广场，公司全员可查看',{entity:'node',id:node.id});go(destination);return;}say(text,{entity:'node',id:node.id});if(location.path==='doc'&&relocateContext.mode==='move')go(`/doc/${node.id}?view=${view}${node.parentId?`&folder=${node.parentId}`:''}`);}} />;
-  useEffect(()=>{
-    if(!shareAfterMove)return;
-    if(shareAfterMove.userId!==userId||window.location.hash!==`#${shareAfterMove.route}`){setShareAfterMove(null);return;}
-    if(location.path!=='space'||spaceUrl(location.id,location.view,location.folder)!==shareAfterMove.route)return;
-    const current=loadState(),target=current.nodes.find(n=>n.id===shareAfterMove.id);
-    setShareAfterMove(null);
-    if(!target||!contentRights(current,target,userId).manage){say('移动已完成，当前无法继续授权，请在目标位置核对权限');return;}
-    setAccessTarget({id:target.id,entity:'node',mode:'share',afterMove:true});
-  },[shareAfterMove,location.path,location.id,location.view,location.folder,userId]);
+  const relocationDialog = relocateContext && <RelocateDialog state={state} userId={userId} context={relocateContext} update={update} onClose={() => setRelocateContext(null)} onSaved={(text,node)=>{const latest=loadState(),view=contentView(latest,node,userId);say(text,{entity:'node',id:node.id});if(location.path==='doc'&&relocateContext.mode==='move')go(`/doc/${node.id}?view=${view}${node.parentId?`&folder=${node.parentId}`:''}`);}} />;
   const uploadQueue=<UploadQueue jobs={uploadJobs} userId={userId} update={update} onOpen={openDoc}/>;
   const fileAction=(action,node,options={})=>{
     try{
@@ -284,8 +265,7 @@ export function KnowledgeApp() {
       if(location.path==='space'||location.path==='doc')go(`/${actionContext.kind}`);
     }catch(error){setActionContext(current=>({...current,error:error.message}));}
   };
-  const AccessComponent=accessTarget?.mode==='share'?ShareDialog:AccessDialog;
-  const accessDialog=accessTarget&&<AccessComponent state={state} userId={userId} item={(accessTarget.entity==='space'?state.spaces:state.nodes).find(n=>n.id===accessTarget.id)} entity={accessTarget.entity} settings={accessTarget.mode==='settings'} afterMove={accessTarget.afterMove} onDelete={requestLibraryDelete} onHandover={openHandover} update={update} onClose={()=>setAccessTarget(null)} onSaved={visibility=>{say(accessTarget.mode==='settings'?'知识库设置已保存':accessTarget.mode==='share'?accessSavedText(visibility):'权限已保存');if(accessTarget.entity==='space'&&location.path==='space'){const latest=loadState();if(!librariesForView(latest,userId,location.view).some(s=>s.id===location.id)){const next=['personal','shared','plaza'].find(v=>librariesForView(latest,userId,v).some(s=>s.id===location.id));go(next?spaceUrl(location.id,next):'/home');}}}}/>;
+  const accessDialog=accessTarget&&<AccessDialog state={state} userId={userId} item={(accessTarget.entity==='space'?state.spaces:state.nodes).find(n=>n.id===accessTarget.id)} entity={accessTarget.entity} settings={accessTarget.mode==='settings'} onDelete={requestLibraryDelete} onHandover={openHandover} update={update} onClose={()=>setAccessTarget(null)} onSaved={()=>{say(accessTarget.mode==='settings'?'知识库设置已保存':'权限已保存');if(accessTarget.entity==='space'&&location.path==='space'){const latest=loadState();if(!librariesForView(latest,userId,location.view).some(s=>s.id===location.id)){const next=['personal','shared','plaza'].find(v=>librariesForView(latest,userId,v).some(s=>s.id===location.id));go(next?spaceUrl(location.id,next):'/home');}}}}/>;
   const handoverDialog=handoverTarget&&<HandoverDialog state={state} userId={userId} {...handoverTarget} update={update} onClose={()=>setHandoverTarget(null)} onSaved={result=>{const {id,entity}=handoverTarget;setAccessTarget(null);setHandoverTarget(null);say(`已交接 ${result.changedCount} 项内容的负责人`);const target=result.state[entity==='space'?'spaces':'nodes'].find(row=>row.id===id),rights=entity==='space'?libraryRights(result.state,target,userId):contentRights(result.state,target,userId);if(!rights.view)go('/home');}}/>;
   const actionDialogs=<>{accessDialog}{handoverDialog}
     {actionContext?.action==='delete-library'&&<ConfirmAction title={`删除知识库「${actionContext.name}」？`} body={`知识库及其中内容将移入回收站，原有单独删除的内容保持删除。删除后可在回收站恢复。未保存的设置不会生效。${actionContext.error?' '+actionContext.error:''}`} confirmText="删除" cancelText="取消" danger onClose={closeAction} onConfirm={confirmLibraryDelete}/>}
@@ -298,7 +278,7 @@ export function KnowledgeApp() {
     {actionContext?.action==='delete'&&<ConfirmAction title={actionContext.batch?`删除所选 ${actionContext.ids.length} 项内容？`:`删除「${actionNode?.name}」？`} body={`${actionContext.batch?selectionSummary(state,actionContext.ids)+'。':''}${actionContext.ids.some(id=>state.nodes.find(n=>n.id===id)?.type==='folder')?'文件夹及其全部子内容将移入回收站。':'内容将移入回收站。'}删除后可在回收站恢复。${actionContext.error?' '+actionContext.error:''}`} confirmText="删除" cancelText="取消" danger onClose={closeAction} onConfirm={()=>{try{update(s=>performBatch(s,{...actionContext,action:'delete'},userId).state);actionDone('已移入回收站');if(location.path==='doc')go(spaceUrl(actionNode.spaceId,location.view,actionNode.parentId));}catch(e){setActionContext(current=>({...current,error:e.message}));}}}/>}</>;
 
   if (location.path === "doc") {
-    return <><DocumentPage key={`${location.id}:${userId}`} navigationGuard={navigationGuard} state={state} update={update} userId={userId} nodeId={location.id} startEditing={location.editing} origin={location.view} fromFolder={location.folder} say={say} setConfirm={setConfirm} onOpen={openDoc} openShare={openShare} onAction={fileAction} notice={notice} setNotice={setNotice} noticeAction={noticeAction} onNoticeView={viewNotice} onNoticePause={setNoticePaused} onNoticeClose={closeNotice} />{actionDialogs}{relocationDialog}{uploadQueue}{confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}</>;
+    return <><DocumentPage key={`${location.id}:${userId}`} navigationGuard={navigationGuard} state={state} update={update} userId={userId} nodeId={location.id} startEditing={location.editing} origin={location.view} fromFolder={location.folder} say={say} setConfirm={setConfirm} onOpen={openDoc} onAction={fileAction} notice={notice} setNotice={setNotice} noticeAction={noticeAction} onNoticeView={viewNotice} onNoticePause={setNoticePaused} onNoticeClose={closeNotice} />{actionDialogs}{relocationDialog}{uploadQueue}{confirm && <ConfirmDialog {...confirm} onClose={() => setConfirm(null)} />}</>;
   }
 
   const drawerSpace=detailAiTarget?state.spaces.find(item=>item.id===state.nodes.find(node=>node.id===detailAiTarget.id)?.spaceId):space;
@@ -339,10 +319,10 @@ export function KnowledgeApp() {
         {!subnavCollapsed && <div className="knowledge-subnav-resize-handle" role="separator" aria-label="调整侧栏宽度" onPointerDown={startSubnavResize} />}
       </aside>}
       <div className={`knowledge-page${detailAiOpen && isDetail ? " detail-ai-open" : ""}`}>
-        {location.path === "home" && <HomePage state={state} userId={userId} onOpen={openDoc} update={update} startUpload={startUpload} onCreateLibrary={()=>setLibraryDialog(true)} startCreate={startCreate} openRelocate={openRelocate} onAction={fileAction} openShare={openShare} />}
+        {location.path === "home" && <HomePage state={state} userId={userId} query={query} onOpen={openDoc} update={update} startUpload={startUpload} onCreateLibrary={()=>setLibraryDialog(true)} startCreate={startCreate} openRelocate={openRelocate} onAction={fileAction} />}
         {location.path === "ask" && <div className="ask-page-frame"><AskPage state={state} userId={userId} onOpen={openDoc} /><OverlayNotice storageKey={ASK_AI_OVERLAY_KEY} title="一期暂不开发" className="ask-ai-overlay"/></div>}
         {isLibrary && <LibraryPage state={state} userId={userId} section={section} startCreate={startCreate} startUpload={startUpload} onCreateLibrary={() => setLibraryDialog(true)} update={update} openSettings={openSettings} say={say} />}
-        {isDetail && <SpaceDetail onHandover={openHandover} state={state} userId={userId} space={space} query={query} folderPath={folderPath} menuFor={menuFor} setMenuFor={setMenuFor} detailAiOpen={detailAiOpen} setDetailAiOpen={setDetailAiOpen} openAccess={openAccess} openShare={openShare} openSettings={openSettings} onAction={fileAction} onBatch={batchAction} locateId={location.locate} origin={location.view} startCreate={startCreate} startUpload={startUpload} folderDraft={folderDraft} onCloseFolder={()=>setFolderDraft(null)} onFolderCreated={node=>say(`已创建文件夹「${node.name}」`)} openDoc={openDoc} openRelocate={openRelocate} say={say} setConfirm={setConfirm} update={update} />}
+        {isDetail && <SpaceDetail onHandover={openHandover} state={state} userId={userId} space={space} query={query} folderPath={folderPath} menuFor={menuFor} setMenuFor={setMenuFor} detailAiOpen={detailAiOpen} setDetailAiOpen={setDetailAiOpen} openSettings={openSettings} onAction={fileAction} onBatch={batchAction} locateId={location.locate} origin={location.view} startCreate={startCreate} startUpload={startUpload} folderDraft={folderDraft} onCloseFolder={()=>setFolderDraft(null)} onFolderCreated={node=>say(`已创建文件夹「${node.name}」`)} openDoc={openDoc} openRelocate={openRelocate} say={say} setConfirm={setConfirm} update={update} />}
         {location.path === "recycle" && <RecyclePage state={state} userId={userId} update={update} setConfirm={setConfirm} say={say} />}
       </div>
       {(isDetail||location.path==='home')&&drawerSpace&&<SpaceAiDrawer open={drawerVisible} key={`${userId}:${detailAiTarget?.id||drawerSpace.id}`} state={state} userId={userId} space={drawerSpace} targetId={detailAiTarget?.id} onOpen={openDoc} onClose={() => {setDetailAiOpen(false);requestAnimationFrame(()=>{const target=document.querySelector('[aria-controls="knowledge-context-ai-drawer"]')||(detailAiReturnFocus.current?.isConnected?detailAiReturnFocus.current:document.querySelector('.knowledge-home-header input'));if(target?.isConnected)target.focus();});}} />}
@@ -364,7 +344,7 @@ function Empty({ title, body, action }) {
   return <div className="knowledge-empty"><MagnifyingGlass size={28} /><strong>{title}</strong><span>{body}</span>{action && <div className="new-create-empty">{action}</div>}</div>;
 }
 
-function HomePage({ state, userId, onOpen, update, startUpload, onCreateLibrary, startCreate, openRelocate, onAction, openShare }) {
+function HomePage({ state, userId, query = "", onOpen, update, startUpload, onCreateLibrary, startCreate, openRelocate, onAction }) {
   const [tab, setTab] = useState("recent");
   const list=homeEntries(state,userId,tab);
   const visits=recentVisits(state,userId);
@@ -384,7 +364,7 @@ function HomePage({ state, userId, onOpen, update, startUpload, onCreateLibrary,
       {list.map(node=>{
         const library=state.spaces.find(item=>item.id===node.spaceId),visited=visits.find(r=>r.id===node.id);
         const values={location:<span title={library?.name}>{library?.name||'—'}</span>,owner:<span><UserCircle size={18} weight="fill"/>{memberName(state,responsibleId(node))}</span>,createdAt:node.createdAt?formatTime(node.createdAt):'—',updatedAt:node.updatedAt?formatTime(node.updatedAt):'—',visitedAt:visited?(visited.visitedAt?formatTime(visited.visitedAt):'更早访问'):'—'};
-        return <div role="button" aria-label={`打开 ${node.name}`} tabIndex={0} className="knowledge-document-row home-document-row" style={grid} key={node.id} onClick={()=>onOpen(node.id)} onKeyDown={e=>{if(e.target===e.currentTarget&&e.key==='Enter')onOpen(node.id);}}><span><ContentIcon node={node}/><span title={node.name}>{node.name}</span>{node.creationDraft?<span className="creation-draft-badge">新建草稿</span>:null}</span>{columns.map(column=><span key={column.id} data-column={column.id}>{values[column.id]}</span>)}<FileMenu state={state} node={node} userId={userId} onAction={onAction} showShare onShare={openShare}/></div>;
+        return <div role="button" aria-label={`打开 ${node.name}`} tabIndex={0} className="knowledge-document-row home-document-row" style={grid} key={node.id} onClick={()=>onOpen(node.id)} onKeyDown={e=>{if(e.target===e.currentTarget&&e.key==='Enter')onOpen(node.id);}}><span><ContentIcon node={node}/><span title={node.name}>{node.name}</span>{node.creationDraft?<span className="creation-draft-badge">新建草稿</span>:null}</span>{columns.map(column=><span key={column.id} data-column={column.id}>{values[column.id]}</span>)}<FileMenu state={state} node={node} userId={userId} onAction={onAction}/></div>;
       })}
     </div></div>
     {!list.length && <Empty title={query.trim()?"没有找到相关内容":tab==="recent"?"还没有访问记录":tab==="favorite"?"还没有收藏":tab==="shared"?"暂无与我共享的内容":"还没有共享内容"} body={query.trim()?"换一个关键词试试。":tab==="favorite"?"在文件或文件夹菜单中点击收藏，便于下次快速打开。":tab==="mine"?"给自己的内容添加协作者后，会显示在这里。":tab==="shared"?"其他人与你定向共享的内容会显示在这里。":"打开知识库中的内容，开始使用。"} />}
@@ -513,7 +493,7 @@ function RecyclePage({state,userId,update,setConfirm,say}){
   </>;
 }
 
-function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEditing = false, origin = "", fromFolder = "", say, setConfirm, onOpen, openShare, onAction, notice, setNotice,noticeAction,onNoticeView,onNoticePause,onNoticeClose }) {
+function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEditing = false, origin = "", fromFolder = "", say, setConfirm, onOpen, onAction, notice, setNotice,noticeAction,onNoticeView,onNoticePause,onNoticeClose }) {
   const node = state.nodes.find((item) => item.id === nodeId);
   const role = nodeRole(state, node, userId);
   const space = state.spaces.find((item) => item.id === node?.spaceId);
@@ -624,7 +604,6 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
           <span className="new-saved-status" role="status">{isNewDraft?"新建草稿 · 首次保存后生效":editing ? draft !== baseBody.current ? "有未保存修改" : "编辑中" : "已保存"}</span><span>{formatTime(node.updatedAt)}</span>
           {!editable && <em className="kb-readonly">{node.format==='file'?'文件预览':`只读 · ${roleLabel(role)}`}</em>}
           {editing && <><button type="button" onClick={() => isNewDraft||draft !== baseBody.current ? setLeave("cancel") : discard()}>{isNewDraft?'放弃新建':'取消编辑'}</button><button type="button" onClick={save}>保存</button></>}
-          <button type="button" disabled={!role.manage||editing} title={editing?'请先保存或取消编辑':!role.manage?'需要管理权限':undefined} onClick={() => openShare(node)}><ShareNetwork size={18} />分享</button>
           <button type="button" aria-label="问 AI" onClick={() => setAiOpen(v=>!v)}><Sparkle size={18} />AI</button>
           <FileMenu state={state} node={node} userId={userId} context="document" editing={editing} onAction={(action,item)=>{if(action==='edit')startEdit();else if(action==='ai'){setKnowledge({mode:'doc',items:[]});setAiOpen(true);}else onAction(action,item);}}/>
           <img className="avatar avatar-small" src={publicAsset("/user-avatar.png")} alt={memberName(state, node.ownerId)} />

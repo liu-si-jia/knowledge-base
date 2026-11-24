@@ -37,7 +37,6 @@
     .pill-warn{background:var(--warn-bg);border-color:var(--warn-bd);color:var(--warn-fg)}
     .pill-lock{background:var(--lock-bg);border-color:var(--lock-bd);color:var(--lock-fg)}
     .pill-brand{background:var(--brand-bg);border-color:var(--brand-border);color:var(--brand-ink)}
-    .pill-draft{background:var(--draft-bg);border:1.5px dashed var(--draft-bd);color:var(--draft-fg)}
     .pill-ai{background:var(--ai-bg);border-color:var(--ai-bd);color:var(--ai-fg)}
     .pill-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
     .stack-gap{margin-top:8px}
@@ -204,19 +203,6 @@
     .tl-result.is-brand{background:var(--brand-bg);border:1px solid var(--brand-border);color:var(--brand-ink)}
     .tl-result.is-warn{background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg)}
 
-    .isolation-grid{display:grid;grid-template-columns:1.28fr 102px 1fr;gap:0;align-items:stretch}
-    .step-strip{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
-    .step-chip{padding:2px 8px;border-radius:5px;background:#f4f7fb;font-size:11px;font-weight:500;color:var(--ink-main)}
-    .branch-panel{margin-top:3px;padding:6px 8px;border-radius:6px;background:#f7f9fc;display:flex;flex-direction:column;gap:5px}
-    .branch-pair{display:flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:11px;color:var(--ink-sub)}
-    .branch-pair b{color:var(--ink-main);font-weight:600}
-    .iso-wall{position:relative;display:flex;align-items:center;justify-content:center;min-height:100%}
-    .iso-wall::before{content:"";position:absolute;top:4px;bottom:4px;left:50%;border-left:1.5px dashed var(--draft-bd)}
-    .iso-badge{position:relative;z-index:1;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;background:#fff;border:1px dashed #9cb7de;color:var(--draft-fg);font-size:10.5px;font-weight:600;white-space:nowrap}
-    .iso-rules{display:flex;flex-direction:column;gap:5px}
-    .iso-rule{display:flex;align-items:flex-start;gap:6px;padding:5px 8px;border-radius:5px;background:#f8fafd;font-size:11.5px;line-height:1.38;color:var(--ink-sub)}
-    .iso-rule svg{margin-top:2px;color:var(--ban-fg)}.iso-rule.is-ok svg{color:var(--brand-ink)}
-
     .transfer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
     .transfer{padding:10px 13px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;display:flex;flex-direction:column;gap:7px;min-width:0}
     .transfer-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.transfer-head h4{font-size:13px;font-weight:600;color:var(--ink-main);margin:0}
@@ -243,7 +229,7 @@
     }
     @media(max-width:780px){
       main{padding:28px 18px 40px}.topbar-inner{padding:12px 18px}.version{display:none}h1{font-size:27px}.diagram{padding:15px}
-      .entry-row,.libraries,.usage-grid,.baseline-grid,.split-panel,.info-trio,.state-grid,.isolation-grid,.transfer-grid{grid-template-columns:1fr}
+      .entry-row,.libraries,.usage-grid,.baseline-grid,.split-panel,.info-trio,.state-grid,.transfer-grid{grid-template-columns:1fr}
       .usage-grid .span-2{grid-column:auto}
       .entry{padding:12px}.section-head{align-items:flex-start;flex-direction:column;gap:3px}
       .grant-map{grid-template-columns:1fr}.grant-map>.arrow{transform:rotate(90deg);padding:3px}
@@ -252,8 +238,6 @@
       .flow-arrow{margin:2px auto;transform:rotate(90deg)}
       .state-bridge{gap:6px}
       .bridge-dir svg{transform:rotate(90deg)}.bridge-dir.is-back svg{transform:rotate(-90deg)}
-      .iso-wall{height:34px;width:100%;min-height:34px}
-      .iso-wall::before{top:50%;bottom:auto;left:4px;right:4px;border-left:0;border-top:1.5px dashed var(--draft-bd)}
       .formula-label,.tl-tag{width:100%}
       .strip-outcome{width:100%;flex:0 0 100%;flex-direction:column;align-items:stretch;gap:6px;margin-left:0;min-width:0}
       .strip-outcome::before{display:none}
@@ -275,7 +259,7 @@
     @media print{
       *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .topbar,.anchors,footer a{display:none}body{background:#fff}main{max-width:none;padding:0}section{margin-top:20px}
-      .permission-part,.library-frame,.entry-row,.diag-card,.flow-panel,.baseline-grid,.split-panel,.info-trio,.state-grid,.timeline-strip,.isolation-grid,.transfer{break-inside:avoid;page-break-inside:avoid}
+      .permission-part,.library-frame,.entry-row,.diag-card,.flow-panel,.baseline-grid,.split-panel,.info-trio,.state-grid,.timeline-strip,.transfer{break-inside:avoid;page-break-inside:avoid}
       .diagram{padding:15px}h1{font-size:27px}
     }
   </style>
@@ -299,7 +283,6 @@
     <symbol id="i-arrow-dbl" viewBox="0 0 16 16"><path d="M2.5 6.2h8.4M2.5 9.8h8.4M9.4 4l3.6 4-3.6 4"/></symbol>
     <symbol id="i-swap" viewBox="0 0 16 16"><path d="M3 5.5h10M10.2 3 13 5.5 10.2 8M13 10.5H3M5.8 8 3 10.5 5.8 13"/></symbol>
     <symbol id="i-reset" viewBox="0 0 16 16"><path d="M3.6 6.4a4.8 4.8 0 1 1 .5 4.9M3.2 3.2v3.4h3.4"/></symbol>
-    <symbol id="i-ban-wall" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M4.2 4.2 11.8 11.8"/></symbol>
     <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="4.3"/><path d="m10.5 10.5 2.8 2.8"/></symbol>
     <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 11.5V3.5M4.8 6.5 8 3.3l3.2 3.2M3 13h10"/></symbol>
     <symbol id="i-grip" viewBox="0 0 16 16"><circle cx="5.8" cy="4.2" r=".8" fill="currentColor" stroke="none"/><circle cx="10.2" cy="4.2" r=".8" fill="currentColor" stroke="none"/><circle cx="5.8" cy="8" r=".8" fill="currentColor" stroke="none"/><circle cx="10.2" cy="8" r=".8" fill="currentColor" stroke="none"/><circle cx="5.8" cy="11.8" r=".8" fill="currentColor" stroke="none"/><circle cx="10.2" cy="11.8" r=".8" fill="currentColor" stroke="none"/></symbol>
@@ -336,7 +319,7 @@
             <span><svg aria-hidden="true"><use href="#i-book"/></svg>知识库</span><i class="arrow" aria-hidden="true">→</i><span><svg aria-hidden="true"><use href="#i-folder"/></svg>多级文件夹</span><i class="arrow" aria-hidden="true">→</i><span><svg aria-hidden="true"><use href="#i-file"/></svg>文件</span><small>文档 / 表格 / 幻灯片 / 上传文件</small>
           </div>
         </div>
-        <div class="shared-tools"><b>共用能力</b><span>新建与上传（含文件夹）</span><span>全局搜索（含历史）与库内搜索</span><span>收藏 · 置顶知识库 / 文件夹 / 文件</span><span>详情 · 封面背景</span><span>移动 · 复制 · 批量操作</span><span>内部分享与权限管理</span></div>
+        <div class="shared-tools"><b>共用能力</b><span>新建与上传（含文件夹）</span><span>全局搜索（含历史）与库内搜索</span><span>收藏 · 置顶知识库 / 文件夹 / 文件</span><span>详情 · 封面背景</span><span>移动 · 复制 · 批量操作</span><span>权限管理与协作者</span></div>
 
         <div class="permission-part">
           <div class="part-title"><h3>使用说明</h3><small>占位 · 搜索 · 上传 · 置顶 · 详情与命名</small></div>
@@ -712,42 +695,6 @@
             </div>
           </div>
 
-          <article class="diag-card stack-gap">
-            <div class="diag-head"><b>分享弹窗与权限管理草稿隔离</b></div>
-            <div class="isolation-grid" role="group" aria-label="独立分享弹窗选人进待新增草稿并点添加协作者生效，继承态有可管理可确认转自定义再加、无可管理提示无权添加协作；与权限管理弹窗草稿不互通">
-              <div class="mini-pop">
-                <div class="mini-pop-head"><span>独立分享弹窗</span></div>
-                <div class="mini-pop-body">
-                  <div class="step-strip">
-                    <span class="step-chip">选人</span>
-                    <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
-                    <span class="pill pill-draft">待新增草稿</span>
-                    <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
-                    <span class="pill pill-brand">点「添加协作者」生效</span>
-                  </div>
-                  <div class="branch-panel">
-                    <div class="branch-pair"><b>继承 + 有可管理</b><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>确认转自定义再加</span></div>
-                    <div class="branch-pair"><b>无可管理</b><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>无权添加协作</span></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="iso-wall" aria-label="分享弹窗与权限管理弹窗草稿互不互通">
-                <span class="iso-badge"><svg class="ico-sm" aria-hidden="true"><use href="#i-ban-wall"/></svg>草稿不互通</span>
-              </div>
-
-              <div class="mini-pop">
-                <div class="mini-pop-head"><span>权限管理弹窗</span></div>
-                <div class="mini-pop-body">
-                  <div class="iso-rules">
-                    <div class="iso-rule"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>不带入分享草稿</span></div>
-                    <div class="iso-rule"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>保存不顺带提交</span></div>
-                    <div class="iso-rule is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-reset"/></svg><span>返回分享可续稿</span></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </article>
         </div>
 
         <div class="permission-part">
@@ -796,7 +743,7 @@
             </article>
           </div>
         </div>
-        <div class="consistency"><b>同一套权限</b><span>列表 / 搜索</span><span>分享 / 协作</span><span>下载 / 恢复</span><span>问 AI 的知识与引用</span></div>
+        <div class="consistency"><b>同一套权限</b><span>列表 / 搜索</span><span>协作授权</span><span>下载 / 恢复</span><span>问 AI 的知识与引用</span></div>
       </div>
     </section>
     <footer><span>企业知识库 · 产品架构与权限体系</span><a href="./#/home">进入原型，查看具体交互 →</a></footer>

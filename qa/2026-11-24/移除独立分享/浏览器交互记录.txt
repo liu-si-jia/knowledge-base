@@ -1,0 +1,28 @@
+浏览器交互检查（Chrome headless，本机原型 http://127.0.0.1:5173/knowledge-base-prototype/）
+这是制作方自测，不是独立验收。
+
+PASS 首页没有独立分享控件
+PASS 我共享的栏目仍在，空状态指向添加协作者
+PASS 首页更多菜单保留权限管理且没有分享
+PASS 更多菜单打开的是权限管理
+PASS 权限弹窗可转自定义，并展示四档角色：可管理、可编辑、可查看并下载、仅查看
+PASS 改回继承后添加协作者按继承规则收起
+PASS 共享库页保留我共享的/与我共享
+PASS 库内保留设置，没有分享按钮
+PASS 文档顶栏和更多菜单没有分享，权限管理仍在
+PASS 介绍页已去掉分享草稿隔离，并保留协作说明
+
+截图目录：/opt/cursor/artifacts/share-removal/
+01-home-recent.png
+02-home-shared-by-me.png
+03-home-shared-with-me.png
+04-home-more-menu.png
+05-permission-dialog.png
+06-four-roles.png
+07-back-to-inherit.png
+08-shared-libraries.png
+09-library-toolbar.png
+10-document-toolbar.png
+11-product-introduction.png
+
+未在浏览器里改数据后刷新核对持久化以外的多窗口场景。文档状态栏仍可能显示权限摘要“查看、编辑、分享、管理、下载”，该“分享”来自能力位标签，点击不打开分享。

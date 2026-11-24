@@ -2,8 +2,7 @@ import { handoverReason } from './handover.js';
 import { activeNode, contentRights, contentTree, deleteContent } from './access.js';
 import { relocationSource, relocateContent, duplicateName, relocationTargetReason } from './contentOperations.js';
 import { validateDestination, writableFolders, writableLibraries } from './contentCreation.js';
-import { libraryRights, libraryType, parentAccess, permissionModeFor } from './access.js';
-import { SHARE_NO_MANAGE_COPY } from './shareGuidance.js';
+import { libraryRights, libraryType, parentAccess } from './access.js';
 
 export function favorites(state,userId){return state.favoritesByUser?.[userId]||(!state.favoritesByUser&&userId===state.meId?state.nodes.filter(n=>n.favorite).map(n=>n.id):[]);}
 export function setFavorite(state,id,userId){const node=state.nodes.find(n=>n.id===id);if(!contentRights(state,node,userId).view)throw Error('当前没有查看权限');const migrated=state.favoritesByUser||{[state.meId]:favorites(state,state.meId)},ids=favorites(state,userId);return {...state,favoritesByUser:{...migrated,[userId]:ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]}};}
@@ -13,8 +12,7 @@ export function actionReason(state,node,userId,action){
   if(action==='discard-draft')return node.creationDraft&&node.draftOwnerId===userId?'':'只能放弃自己的新建草稿';
   if(node.creationDraft&&!['open','favorite','info','locate','rename','edit','ai'].includes(action))return '请先保存新建草稿';
   if(action==='handover')return handoverReason(state,node.id,'node',userId);
-  if(action==='share'&&!rights.manage)return permissionModeFor(node)==='inherit'?SHARE_NO_MANAGE_COPY:'需要管理权限';
-  const required={'create-in':'edit','upload-in':'edit',newHere:'edit',uploadHere:'edit',open:'view',ai:'view',favorite:'view',pin:'view',info:'view',locate:'view',rename:'edit',edit:'edit',permissions:'manage',share:'manage',download:'download',print:'download',delete:'manage',move:'manage',copy:'download'}[action];
+  const required={'create-in':'edit','upload-in':'edit',newHere:'edit',uploadHere:'edit',open:'view',ai:'view',favorite:'view',pin:'view',info:'view',locate:'view',rename:'edit',edit:'edit',permissions:'manage',download:'download',print:'download',delete:'manage',move:'manage',copy:'download'}[action];
   if(required&&!rights[required])return {view:'需要查看权限',edit:'需要编辑权限',manage:'需要管理权限',download:'需要查看并下载权限'}[required];
   if(action==='permissions'&&libraryType(state.spaces.find(space=>space.id===node.spaceId))==='personal')return '个人内容仅自己可见，无需配置权限';
   if(['download','print','copy'].includes(action)&&!rights.view)return '需要查看权限';

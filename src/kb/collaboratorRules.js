@@ -118,8 +118,3 @@ export function validateLocalEdits(subjects,previous,inherited,userId){
   });
 }
 
-// Opening management never confirms the separate share draft. Cancel returns to
-// that draft; management Save commits only management's own confirmed additions.
-export function managementDraftFromShare(target,entity){
-  return entity==='node'?target.layers.local:target.access;
-}

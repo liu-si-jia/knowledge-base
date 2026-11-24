@@ -7,12 +7,12 @@ import { prepareAddedCollaborators, rejectNonElevatingInherited } from './collab
 export function permissionTarget(state,id,entity,userId){
   const item=state[entity==='space'?'spaces':'nodes'].find(n=>n.id===id),rights=entity==='space'?libraryRights(state,item,userId):contentRights(state,item,userId);
   if(!item||item.deletedAt||!rights.manage)throw Error('当前没有管理权限');
-  if(entity==='node'&&item.creationDraft)throw Error('请先首次保存新建草稿，再配置权限或分享');
+  if(entity==='node'&&item.creationDraft)throw Error('请先首次保存新建草稿，再配置权限');
   const library=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId),owners=displayedResponsibles(state,item,entity).map(row=>row.id);
   const access=entity==='space'?libraryLocalAccess(state,item):item.localAccess||accessFromSubjects(state,[]);
   return {item,library,owners,access:toSubjectAccess(state,access,owners),...(entity==='node'?{layers:permissionLayers(state,item)}:{})};
 }
-export function addCollaborators(state,{id,entity='node',subjects,expected,confirmedIndependent=false},userId){
+export function addCollaborators(state,{id,entity='node',subjects,expected},userId){
   const target=permissionTarget(state,id,entity,userId);
   if(expected&&accessFingerprint(state,target.item,entity)!==expected)throw Error('当前权限已变化，请关闭后重新打开核对');
   if(libraryType(target.library)==='personal')throw Error('个人内容不能直接添加协作者，请先移动到共享知识库或知识广场');

@@ -5,7 +5,7 @@ import { saveEntityAccess, contentRights, permissionLayers, switchNodePermission
 import { createLibrary } from './libraryCreation.js';
 import { createContent } from './contentCreation.js';
 import { accessFromSubjects } from './permissions.js';
-import { applyCollaboratorAction, applyBatchCollaboratorAction, rowRoleOptions, batchPermissionOptions, managementDraftFromShare, collaboratorCaption } from './collaboratorRules.js';
+import { applyCollaboratorAction, applyBatchCollaboratorAction, rowRoleOptions, batchPermissionOptions, collaboratorCaption } from './collaboratorRules.js';
 import { addCollaborators } from './permissionOperations.js';
 const person=(id,role,addedBy)=>({type:'person',id,role,...(addedBy?{addedBy}:{})});
 function fixture(){
@@ -77,12 +77,10 @@ test('纯规则修改已有自定义项保留添加者和未知历史；新加�
   }
   const next=applyCollaboratorAction({},{localSubjects:[],inheritedSubjects:[],mode:'custom'},person('lin-xia','viewer'),'editor','chen-ke');assert.equal(next.localSubjects[0].addedBy,'chen-ke');
 });
-test('分享待新增draft不进入管理保存；取消不落盘，分享确认保存记录真正添加者',()=>{
+test('权限管理不经过分享草稿；继承模式不能直接加人，转自定义后记录添加者',()=>{
   let {s,id}=fixture();const before=structuredClone(s),pending=[person('lin-xia','downloader')];
-  const target={layers:permissionLayers(s,get(s,id))};
-  const draft=managementDraftFromShare(target,'node');assert.deepEqual(draft.subjects,[]);assert.deepEqual(s,before);
-  s=saveEntityAccess(s,{id,permissionMode:'inherit',localAccess:draft},s.meId);assert.equal(get(s,id).localAccess.subjects.length,0);assert.deepEqual(pending,[person('lin-xia','downloader')]);
   assert.throws(()=>addCollaborators(s,{id,subjects:pending},s.meId),/转为自定义/);
+  assert.deepEqual(s,before);
   s=persistMode(s,id,s.meId,'custom');
   s=addCollaborators(s,{id,subjects:pending},s.meId);assert.equal(get(s,id).localAccess.subjects.find(row=>row.id==='lin-xia').addedBy,s.meId);
 });

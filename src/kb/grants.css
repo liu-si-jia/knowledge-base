@@ -116,10 +116,6 @@
 .knowledge-product-dialog .grant-mode-bar{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:16px;margin:16px 0}
 .knowledge-product-dialog .grant-mode-bar .grant-mode-switch{height:32px;padding:0 12px;border:0;border-radius:8px;background:#fff;color:#2b6ae0;box-shadow:inset 0 0 0 1px #d5e3f6;flex-shrink:0;margin-left:auto}
 .knowledge-product-dialog .grant-mode-bar .grant-mode-switch:hover{background:#edf4ff;color:#2b6ae0}
-.share-inherit-guide{margin:0 0 12px;padding:12px 14px;border:1px solid #e6edf5;border-radius:10px;background:#f7f9fc}
-.share-inherit-guide p{margin:0;font-size:13px;line-height:1.7;color:#3d4f66}
-.share-inherit-guide button{margin-top:10px;height:32px;padding:0 12px;border:0;border-radius:8px;background:#3478f6;color:#fff;font:inherit;font-size:12px;cursor:pointer}
-.share-inherit-blocked{margin:0 0 12px;padding:12px 14px;border-radius:10px;background:#f8f1f1;color:#9b3a32;font-size:13px}
 .permission-mode-backdrop{z-index:165}
 .subject-picker.permission-mode-confirm{width:min(480px,calc(100vw - 24px))}
 .permission-mode-confirm>p{margin:0 0 18px;font-size:13px;line-height:1.8;color:#526781}

@@ -50,7 +50,7 @@ test('继承模式下公司与部门授权随父级生效，转自定义后可�
   const current=s.nodes.find(n=>n.id===file.id);assert.equal(contentRights(s,current,'chen-ke').edit,true);assert.equal(contentRights(s,current,'zhao-heng').view,true);assert.equal(contentRights(s,current,'lin-xia').download,true);assert.equal(effectiveAccess(s,current).visibility,'public');
   assert.equal(librariesForView(s,'lin-xia','shared').some(l=>l.id===library.id),true);
 });
-test('继承模式不能通过分享加人；转为自定义后可添加尚未在快照中的对象',()=>{
+test('继承模式不能直接添加协作者；转为自定义后可添加尚未在快照中的对象',()=>{
   let {s,file}=fixture();
   assert.throws(()=>addCollaborators(s,{id:file.id,subjects:[person('chen-ke','editor')]},s.meId),/转为自定义/);
   s=toCustom(s,file.id);
