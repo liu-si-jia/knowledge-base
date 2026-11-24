@@ -5,28 +5,310 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>产品介绍 · 企业知识库</title>
   <style>
-    :root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;color:#293648;background:#f8fafc;font-synthesis:none;line-height:1.65}
+    :root{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+      color:#293648;background:#f8fafc;font-synthesis:none;line-height:1.65;
+      --bg-page:#f8fafc;--bg-card:#ffffff;--bg-subtle:#f7f9fc;
+      --ink-main:#293648;--ink-sub:#4f637a;--ink-muted:#74859b;
+      --line-card:#e1e7ef;--line-soft:#e8edf4;--line-arrow:#9db3cf;
+      --brand:#397bea;--brand-bg:#f1f6ff;--brand-border:#cfe0fa;--brand-ink:#2f5d9f;
+      --lib-personal-bg:#f4f8ff;--lib-personal-bd:#dce7f7;--lib-personal-fg:#476894;
+      --lib-shared-bg:#f2faf7;--lib-shared-bd:#dceee6;--lib-shared-fg:#3d7c6b;
+      --lib-plaza-bg:#fffaf1;--lib-plaza-bd:#eee3ce;--lib-plaza-fg:#96763f;
+      --ai-bg:#eeebff;--ai-bd:#d8d0f8;--ai-fg:#7b6cad;
+      --ok-bg:#edf8f3;--ok-bd:#c8e7da;--ok-fg:#2b755d;
+      --ban-bg:#fef3f2;--ban-bd:#f5d0cc;--ban-fg:#b44338;
+      --warn-bg:#fff8eb;--warn-bd:#f1ddb4;--warn-fg:#946722;
+      --lock-bg:#f1f5f9;--lock-bd:#d8e1ec;--lock-fg:#556880;
+      --draft-bg:#fafcff;--draft-bd:#b4cae8;--draft-fg:#4a6f9c;
+    }
     *{box-sizing:border-box}body{margin:0}a{color:inherit;text-decoration:none}a:focus-visible{outline:2px solid #5288dd;outline-offset:4px}svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.symbols{position:absolute;width:0;height:0;overflow:hidden}
     .topbar{position:sticky;top:0;z-index:2;background:#ffffffed;border-bottom:1px solid #e5eaf1;backdrop-filter:blur(12px)}.topbar-inner{max-width:1160px;margin:auto;min-height:68px;padding:12px 28px;display:flex;align-items:center;gap:12px}.brand-mark{display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:#eaf1ff;color:#397bea;font-size:17px;font-weight:650}.brand{font-size:15px;font-weight:600}.version{font-size:11px;color:#8592a3;border-left:1px solid #e1e7ef;padding-left:12px}.enter{margin-left:auto;padding:7px 15px;background:#397bea;color:#fff;border-radius:6px;font-size:12px;white-space:nowrap}.enter:hover{background:#2d6dd6}
     main{max-width:1160px;margin:auto;padding:38px 28px 54px}h1{font-size:32px;line-height:1.35;letter-spacing:-.8px;margin:0 0 10px}h2{font-size:21px;line-height:1.4;letter-spacing:-.4px;margin:0}h3{font-size:13px;font-weight:600;margin:0}p{margin:0}.lead{font-size:14px;color:#748196}.anchors{display:flex;gap:8px;margin-top:20px}.anchors a{padding:5px 12px;border:1px solid #e0e6ee;border-radius:6px;background:#fff;font-size:12px;color:#68788e}.anchors a:hover{border-color:#b6cbea;color:#397bea}section{margin-top:34px;scroll-margin-top:92px}.section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:15px}.section-head>span{font-size:11px;color:#8b99ac}.diagram{border:1px solid #e1e7ef;border-radius:12px;background:#fff;padding:22px}.arrow{color:#a5b8d1;font-size:22px;line-height:1.2;text-align:center;font-style:normal}.connector{width:1px;height:18px;background:#d9e4f2;margin:auto}.muted{font-size:11px;color:#8493a7}.icon{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:8px;background:#eaf1ff;color:#6086bc}.icon.green{background:#e1f3ec;color:#4e9a83}.icon.gold{background:#fff0d8;color:#b99351}.icon.purple{background:#eeebff;color:#8b7cb9}
     .architecture-root{text-align:center;padding:13px;background:#f1f6ff;border:1px solid #dae6f8;border-radius:8px;color:#345c93;font-size:17px;font-weight:600}.entry-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.entry{display:flex;align-items:flex-start;gap:10px;padding:14px;background:#fafbfd;border:1px solid #e5eaf1;border-radius:8px}.entry b{display:block;font-size:13px;font-weight:600}.entry p{font-size:11px;color:#8190a4;margin-top:3px}.library-frame{border:1px solid #e2e8f0;border-radius:9px;padding:15px}.layer-label{font-size:10px;color:#8b9cb1;letter-spacing:.04em;margin-bottom:11px}.libraries{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.library{border:1px solid #dce7f7;background:#f4f8ff;border-radius:8px;padding:15px}.library.shared{background:#f2faf7;border-color:#dceee6}.library.plaza{background:#fffaf1;border-color:#eee3ce}.library-head{display:flex;align-items:center;gap:9px;margin-bottom:9px}.library h3{font-size:14px}.library strong{display:block;font-size:12px;font-weight:500;color:#526e95}.library.shared strong{color:#4a8776}.library.plaza strong{color:#a2844f}.library p{font-size:11px;color:#8493a5;margin-top:4px}.fixed-type{font-size:11px;color:#8996a8;text-align:center;margin-top:11px}.content-line{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:15px;padding:12px;background:#f7f9fc;border-radius:7px;font-size:12px;color:#59718e}.content-line>span{display:flex;align-items:center;gap:6px}.content-line small{color:#8799af;font-size:11px}.shared-tools{display:flex;justify-content:center;gap:8px 20px;flex-wrap:wrap;margin-top:15px;font-size:11px;color:#8091a7}.shared-tools b{font-weight:500;color:#526c8d}
-    .permission-part+.permission-part{border-top:1px solid #edf0f5;margin-top:22px;padding-top:22px}.part-title{display:flex;align-items:center;gap:8px;margin-bottom:13px}.part-title>span{display:grid;place-items:center;width:22px;height:22px;border-radius:6px;background:#edf3fd;color:#6789b9;font-size:10px;font-weight:600}.part-title small{font-size:11px;font-weight:400;color:#8e9caf}.grant-map{display:grid;grid-template-columns:1fr 26px 1.2fr 26px 1.5fr;gap:8px;align-items:center}.node{padding:13px;border:1px solid #e2e8f1;border-radius:7px;text-align:center;min-width:0}.node b{display:block;font-size:12px;font-weight:500}.node small{display:block;font-size:11px;color:#8b9aaf;margin-top:3px}.node.blue{background:#f2f7ff;border-color:#dbe7f8}.subjects{display:flex;gap:6px}.subjects>span{flex:1;text-align:center;padding:9px 5px;border:1px solid #e4eaf2;border-radius:6px;background:#f8fafd;color:#637d9e;font-size:12px}.resource-tree{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#587291}.caption{font-size:11px;color:#8493a7;margin-top:11px;text-align:center}.levels{display:grid;grid-template-columns:1fr 20px 1fr 20px 1fr 20px 1fr;align-items:stretch;gap:5px}.level{padding:12px;border:1px solid #e2e9f3;border-radius:7px;text-align:center;background:#fafbfd}.level:nth-of-type(2){background:#f5f8fe}.level:nth-of-type(3){background:#eff5ff}.level:nth-of-type(4){background:#e8f1ff;border-color:#d0e0f8}.level b{display:block;font-size:12px;color:#4c6c98}.level p{font-size:11px;color:#8192aa;margin-top:5px}.levels>.arrow{align-self:center}.levels+.grant-map{margin-top:14px}.part-title+.merge{margin-top:0}.merge{display:grid;grid-template-columns:1fr 22px 1fr 26px 1fr;gap:7px;align-items:center;margin-top:12px}.merge .node{padding:10px;font-size:11px;color:#647d9c}.merge .result{background:#f1f7ff;border-color:#d9e6fa;color:#3e73b8}.example{text-align:center;font-size:11px;color:#8496ad;margin-top:9px}.example strong{color:#4279ba;font-weight:500}.responsibility{display:grid;grid-template-columns:1.65fr 30px 1fr;gap:10px;align-items:center}.protected-people{display:flex;gap:7px;flex-wrap:wrap}.protected-people span{flex:1;min-width:115px;padding:11px 8px;border:1px solid #e1e8f2;border-radius:6px;text-align:center;font-size:11px;color:#667f9e}.ownership-note{display:flex;justify-content:center;gap:8px 22px;flex-wrap:wrap;margin-top:11px;font-size:11px;color:#8294ac}.ownership-note b{font-weight:500;color:#5b799f}.transfer-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.transfer{padding:15px;border:1px solid #e2e8f0;border-radius:8px}.transfer h4{font-size:12px;color:#577394;margin:0 0 10px}.transfer-map{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}.transfer-map b{font-weight:500;font-size:11px;padding:7px 10px;background:#f1f6fd;border-radius:5px;color:#627fa4}.transfer p{font-size:11px;color:#8193ac;margin-top:10px;text-align:center}.transfer .boundary{color:#a37946;margin-top:6px}.consistency{display:flex;align-items:center;justify-content:center;gap:8px 18px;flex-wrap:wrap;margin-top:20px;padding:11px;background:#f5f8fc;border-radius:7px;font-size:11px;color:#8192a8}.consistency b{font-weight:500;color:#5d789b}
+    .permission-part+.permission-part{border-top:1px solid #edf0f5;margin-top:24px;padding-top:24px}.shared-tools+.permission-part{border-top:1px solid #edf0f5;margin-top:22px;padding-top:22px}.part-title{display:flex;align-items:center;gap:8px;margin-bottom:14px}.part-title>span{display:grid;place-items:center;width:22px;height:22px;border-radius:6px;background:#edf3fd;color:#6789b9;font-size:10px;font-weight:600}.part-title small{font-size:11px;font-weight:400;color:var(--ink-muted)}
+
+    .ico{width:13px;height:13px;stroke-width:1.9}.ico-sm{width:12px;height:12px;stroke-width:2}.ico-arr{width:15px;height:15px;stroke-width:1.8;color:var(--line-arrow)}.ico-rev{transform:rotate(180deg)}
+    .diag-card,.flow-panel{border:1px solid #e4eaf2;border-radius:8px;background:#fafbfd;padding:14px 16px;min-width:0}.flow-panel{background:var(--bg-card)}
+    .diag-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:11px}.diag-head b{font-size:12.5px;font-weight:600;line-height:1.35;color:var(--ink-main)}.diag-tag{font-size:10.5px;font-weight:500;line-height:1.25;color:var(--ink-muted);background:#eef3f9;padding:2px 8px;border-radius:999px;white-space:nowrap}
+    .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:500;line-height:1.3;border:1px solid transparent;max-width:100%;cursor:default}
+    .pill-ok{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-fg)}
+    .pill-ban{background:var(--ban-bg);border-color:var(--ban-bd);color:var(--ban-fg)}
+    .pill-warn{background:var(--warn-bg);border-color:var(--warn-bd);color:var(--warn-fg)}
+    .pill-lock{background:var(--lock-bg);border-color:var(--lock-bd);color:var(--lock-fg)}
+    .pill-brand{background:var(--brand-bg);border-color:var(--brand-border);color:var(--brand-ink)}
+    .pill-draft{background:var(--draft-bg);border:1.5px dashed var(--draft-bd);color:var(--draft-fg)}
+    .pill-ai{background:var(--ai-bg);border-color:var(--ai-bd);color:var(--ai-fg)}
+    .pill-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+    .stack-gap{margin-top:14px}
+    .mini-frame,.mini-win,.mini-pop,.mini-modal,.mini-side,.mini-btn{cursor:default}
+
+    .usage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.usage-grid .span-2{grid-column:1/-1}
+    .mini-win-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .mini-win{border:1px solid #dde6f2;border-radius:7px;background:#fff;overflow:hidden;min-width:0;display:flex;flex-direction:column}
+    .mini-win.is-side{flex-direction:row;min-height:92px}
+    .mini-bar-side{width:56px;flex-shrink:0;background:var(--brand-bg);color:var(--brand-ink);font-size:10.5px;font-weight:500;padding:8px 6px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;border-right:1px solid #dbe7f8}
+    .mini-bar-top{background:var(--brand-bg);color:var(--brand-ink);font-size:10.5px;font-weight:500;padding:5px 9px;display:flex;align-items:center;gap:5px;border-bottom:1px solid #dbe7f8;line-height:1.25}
+    .mini-dots{display:inline-flex;gap:3px;margin-right:3px}.mini-dots i{width:5px;height:5px;border-radius:50%;background:#b8cbe6;display:block}
+    .mini-overlay{flex:1;padding:10px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center;min-width:0}
+    .mini-overlay.is-ai{background:rgba(238,235,255,.55);border:1px dashed var(--ai-bd);margin:6px;border-radius:5px}
+    .mini-overlay.is-oo{background:repeating-linear-gradient(-45deg,#f7f9fc,#f7f9fc 6px,#f1f5fa 6px,#f1f5fa 12px);margin:6px;border-radius:5px}
+    .mini-overlay strong{font-size:11.5px;font-weight:600;color:var(--ink-main);line-height:1.3}
+    .status-strip{margin-top:10px;padding:7px 10px;border-radius:6px;background:var(--brand-bg);color:var(--brand-ink);font-size:11.5px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+
+    .search-list{display:flex;flex-direction:column;gap:8px}
+    .search-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;background:#fff;border:1px solid var(--line-soft);min-width:0}
+    .search-row.is-primary{background:var(--brand-bg);border-color:var(--brand-border)}
+    .search-row.is-ban{background:var(--ban-bg);border-color:var(--ban-bd)}
+    .search-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0;background:#fff;color:var(--brand-ink)}
+    .search-row.is-ban .search-badge{background:#fff;color:var(--ban-fg)}
+    .search-desc{font-size:11.5px;color:var(--ink-sub);line-height:1.4;min-width:0}.search-desc b{color:var(--ink-main);font-weight:600}
+
+    .upload-branches{display:flex;flex-direction:column;gap:8px;min-width:0}
+    .branch-line{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:8px 10px;border-radius:7px;background:#f7f9fc;border:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-sub)}
+    .branch-head{display:inline-flex;align-items:center;gap:5px;font-weight:600;color:var(--ink-main);white-space:nowrap}
+    .mini-pop{border:1px solid #dde6f2;border-radius:7px;background:#fff;overflow:hidden;min-width:0;display:flex;flex-direction:column}
+    .mini-pop.is-brand{border-color:var(--brand-border);background:var(--brand-bg)}
+    .mini-pop-head{padding:6px 10px;background:#f4f7fb;border-bottom:1px solid var(--line-soft);font-size:11px;font-weight:600;color:var(--ink-main);display:flex;align-items:center;justify-content:space-between;gap:6px}
+    .mini-pop.is-brand .mini-pop-head{background:#e6f0ff;border-bottom-color:var(--brand-border);color:var(--brand-ink)}
+    .mini-pop-body{padding:9px 10px;display:flex;flex-direction:column;gap:6px;font-size:11.5px;color:var(--ink-sub);flex:1;justify-content:center}
+    .mini-file-line{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:5px 8px;border-radius:5px;background:#f7f9fc;font-size:11px;color:var(--ink-main)}
+    .mini-file-line>span{display:inline-flex;align-items:center;gap:5px;min-width:0}
+    .mini-btn{display:inline-flex;align-items:center;justify-content:center;padding:4px 10px;border-radius:5px;background:var(--brand);color:#fff;font-size:11px;font-weight:500;align-self:flex-start}
+
+    .pin-split{display:grid;grid-template-columns:1.05fr 1fr;gap:10px;align-items:stretch}
+    .mini-side{background:#fff;border:1px solid #dde6f2;border-radius:7px;padding:8px 10px;display:flex;flex-direction:column;gap:5px;min-width:0}
+    .mini-side-title{font-size:10.5px;font-weight:600;color:var(--ink-muted);letter-spacing:.03em;padding-bottom:3px;border-bottom:1px solid var(--line-soft)}
+    .mini-side-item{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 6px;border-radius:5px;background:#f7f9fc;font-size:11.5px;color:var(--ink-main)}
+    .mini-side-item>span{display:inline-flex;align-items:center;gap:6px;color:var(--ink-main)}
+    .mini-side-item>span svg{color:var(--brand-ink)}
+    .mini-side-item .grip{color:#a2b2c6}
+    .rule-chips{display:flex;flex-direction:column;justify-content:space-between;gap:6px;min-width:0}
+    .rule-chip{padding:5px 9px;border-radius:6px;background:#fff;border:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-sub);line-height:1.35}
+    .ban-strip{margin-top:10px;padding:7px 10px;border-radius:6px;background:var(--ban-bg);border:1px solid var(--ban-bd);display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--ban-fg)}
+    .strike-tag{padding:1px 7px;border-radius:4px;background:#fff;color:#93a1b3;font-size:10.5px;text-decoration:line-through;border:1px solid #e4e9f0}
+
+    .detail-stack{display:flex;flex-direction:column;gap:8px}
+    .detail-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:8px 10px;border-radius:7px;background:#fff;border:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-sub)}
+    .detail-label{display:inline-flex;align-items:center;gap:5px;font-weight:600;color:var(--ink-main);white-space:nowrap}
+    .field-tag{padding:2px 7px;border-radius:4px;background:#f3f6fb;color:var(--ink-sub);font-size:11px;line-height:1.3}
+    .cover-thumb{width:36px;height:24px;border-radius:5px;background:linear-gradient(135deg,#dbe9ff 0%,#9ec0f8 55%,#7ca6ee 100%);color:#2f5d9f;display:inline-grid;place-items:center;flex-shrink:0}
+    .cover-desc{flex:1;min-width:180px;line-height:1.4}.cover-desc b{color:var(--ink-main);font-weight:600}
+    .term-grid{display:grid;grid-template-columns:1.35fr .85fr;gap:8px}
+    .term-box{padding:7px 10px;border-radius:7px;background:#f2f6fb;font-size:11.5px;color:var(--ink-sub);display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-width:0}
+    .term-box b{color:var(--brand-ink);font-weight:600}.term-box small{color:var(--ink-muted);font-size:10.5px}
+
+    .levels{display:grid;grid-template-columns:1fr 20px 1fr 20px 1fr 20px 1fr;align-items:stretch;gap:5px}
+    .level{padding:12px 12px 10px;border:1px solid #e2e9f3;border-radius:7px;text-align:center;background:#fafbfd;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+    .level:nth-of-type(2){background:#f5f8fe}.level:nth-of-type(3){background:#eff5ff}.level:nth-of-type(4){background:#e8f1ff;border-color:#d0e0f8}
+    .level b{display:block;font-size:12px;color:#4c6c98}.level p{font-size:11px;color:#74859b;margin-top:4px}.levels>.arrow{align-self:center}
+    .level-meter{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:9px}
+    .level-meter i{height:3px;border-radius:2px;background:#dce5f2;display:block}.level-meter i.on{background:#4d86e4}
+    .grant-map{display:grid;grid-template-columns:1fr 26px 1.2fr 26px 1.5fr;gap:8px;align-items:center;margin-top:14px}
+    .node{padding:12px;border:1px solid #e2e8f1;border-radius:7px;text-align:center;min-width:0}.node b{display:block;font-size:12px;font-weight:600;color:var(--ink-main)}.node small{display:block;font-size:11px;color:var(--ink-muted);margin-top:3px}.node.blue{background:var(--brand-bg);border-color:var(--brand-border)}.node.blue b{color:var(--brand-ink)}
+    .subjects{display:flex;gap:6px}.subjects>span{flex:1;text-align:center;padding:9px 5px;border:1px solid #e4eaf2;border-radius:6px;background:#f8fafd;color:#4f637a;font-size:12px;font-weight:500}
+    .resource-tree{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#4f637a;font-weight:500}
+
+    .formula-bar{margin-top:14px;padding:10px 14px;border-radius:8px;background:var(--bg-subtle);border:1px solid #e3ebf5;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+    .formula-label{margin-right:4px;display:flex;flex-direction:column;line-height:1.25}.formula-label b{font-size:12px;color:var(--ink-main)}.formula-label small{font-size:10.5px;color:var(--ink-muted)}
+    .formula-item{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:6px;background:#fff;border:1px solid #e0e7f1;font-size:11.5px;color:var(--ink-sub)}
+    .formula-item b{color:var(--ink-main);font-weight:600}
+    .formula-item.is-win{background:var(--brand-bg);border-color:var(--brand-border);color:var(--brand-ink)}.formula-item.is-win b{color:var(--brand-ink)}
+    .formula-op{font-size:12px;font-weight:600;color:var(--line-arrow)}
+    .formula-result{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;background:var(--brand);color:#fff;font-size:11.5px;font-weight:600}
+    .strip-outcome{display:inline-flex;align-items:center;gap:8px;flex:1 0 auto;min-width:max-content}
+    .strip-outcome::before{content:"";flex:1 1 14px;min-width:14px;border-top:1.5px dashed #cbd8ea}
+
+    .baseline-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+    .baseline-card{padding:12px 13px;border-radius:8px;border:1px solid var(--lib-personal-bd);background:var(--lib-personal-bg);display:flex;flex-direction:column;gap:7px;min-width:0}
+    .baseline-card.shared{background:var(--lib-shared-bg);border-color:var(--lib-shared-bd)}
+    .baseline-card.plaza{background:var(--lib-plaza-bg);border-color:var(--lib-plaza-bd)}
+    .baseline-head{display:flex;align-items:center;justify-content:space-between;gap:6px}
+    .baseline-head>span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--lib-personal-fg)}
+    .baseline-card.shared .baseline-head>span{color:var(--lib-shared-fg)}
+    .baseline-card.plaza .baseline-head>span{color:var(--lib-plaza-fg)}
+    .baseline-tag{font-size:10.5px;font-weight:500;padding:2px 7px;border-radius:999px;background:#fff;color:var(--ink-sub);white-space:nowrap}
+    .baseline-rule{display:flex;align-items:center;gap:6px;font-size:11.5px;line-height:1.4;color:var(--ink-sub)}
+    .baseline-rule.is-ban{color:var(--ban-fg)}.baseline-rule.is-ok{color:var(--ok-fg)}.baseline-rule.is-warn{color:var(--warn-fg)}.baseline-rule.is-brand{color:var(--brand-ink)}
+    .common-ribbon{margin-top:8px;padding:8px 12px;border-radius:7px;background:var(--bg-subtle);border:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 10px;font-size:11.5px;color:var(--ink-sub)}
+    .common-ribbon b{color:var(--ink-main);font-weight:600}
+
+    .flow-row{display:grid;align-items:center;gap:8px}
+    .flow-row.is-upload{grid-template-columns:1.58fr 20px 1.05fr 20px .9fr}
+    .flow-row.is-4{grid-template-columns:1fr 18px 1.28fr 18px .95fr 18px .92fr}
+    .flow-row.is-3{grid-template-columns:1.15fr 20px 1fr 20px 1.25fr;align-items:stretch}
+    .flow-arrow{display:grid;place-items:center;color:var(--line-arrow)}
+    .flow-node{padding:10px 11px;border-radius:7px;border:1px solid #e0e7f1;background:#fafbfd;text-align:center;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
+    .flow-node b{font-size:12px;font-weight:600;color:var(--ink-main);line-height:1.35}.flow-node small{font-size:11px;color:var(--ink-sub);line-height:1.35}
+    .flow-node.is-draft{background:var(--draft-bg);border:1.5px dashed var(--draft-bd)}.flow-node.is-draft b{color:var(--draft-fg)}
+    .flow-node.is-done{background:var(--brand-bg);border-color:var(--brand-border)}.flow-node.is-done b{color:var(--brand-ink)}
+    .flow-abort{margin-top:10px;padding-top:9px;border-top:1px dashed #e2e9f2;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 14px}
+
+    .split-panel{display:grid;grid-template-columns:1.05fr 1fr;gap:12px;align-items:stretch}
+    .mini-modal{border:1px solid #dbe4f0;border-radius:7px;background:#fff;overflow:hidden;display:flex;flex-direction:column}
+    .modal-zone-top{padding:10px 12px;background:var(--brand-bg);border-bottom:1px dashed #c7daf5;display:flex;flex-direction:column;gap:7px}
+    .zone-label{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--brand-ink);line-height:1.35}
+    .modal-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 8px;padding:6px 9px;border-radius:6px;background:#fff;font-size:11.5px;color:var(--ink-main)}
+    .modal-person{display:inline-flex;align-items:center;gap:7px;font-weight:600}
+    .avatar-dot{width:18px;height:18px;border-radius:50%;background:#dce9fc;color:var(--brand-ink);display:inline-grid;place-items:center;font-size:10px;font-weight:600;flex-shrink:0}
+    .zone-note{font-size:11px;color:var(--ink-muted)}
+    .modal-zone-list{padding:10px 12px;background:#fff;display:flex;flex-direction:column;gap:6px}
+    .modal-zone-list .zone-label{color:var(--ink-muted);font-weight:500}
+    .skel-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 8px;border-radius:5px;background:#f8fafd}
+    .skel-left{display:flex;align-items:center;gap:7px;flex:1;min-width:0}.skel-dot{width:14px;height:14px;border-radius:50%;background:#e4ebf4;flex-shrink:0}.skel-bar{height:7px;width:54%;max-width:110px;border-radius:4px;background:#e4ebf4}.skel-bar.is-short{width:38%;max-width:78px}.skel-role{font-size:10.5px;color:#8a99ad}
+
+    .protect-stack{display:flex;flex-direction:column;gap:10px;min-width:0}
+    .protect-card{flex:1;padding:13px 15px;border-radius:8px;border:1px solid #e4eaf2;background:#fafbfd;display:flex;flex-direction:column;justify-content:center;gap:9px;min-width:0}
+    .protect-card.is-brand{background:var(--brand-bg);border-color:var(--brand-border)}
+    .protect-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    .protect-head>span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-main)}
+    .protect-card.is-brand .protect-head>span{color:var(--brand-ink)}
+    .mini-path{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:11.5px;color:var(--ink-sub)}
+    .path-node{padding:3px 8px;border-radius:5px;background:#fff;font-weight:500;color:var(--ink-main)}
+
+    .handover-col{padding:11px 12px;border-radius:7px;background:#fafbfd;border:1px solid var(--line-soft);display:flex;flex-direction:column;gap:7px;min-width:0}
+    .handover-title{font-size:11.5px;font-weight:600;color:var(--ink-main);display:flex;align-items:center;gap:5px}
+    .handover-item{display:flex;align-items:flex-start;gap:6px;font-size:11.5px;line-height:1.45;color:var(--ink-sub)}
+    .handover-item svg{margin-top:2px}
+    .handover-item.is-ok{color:var(--ok-fg);font-weight:500}.handover-item.is-ban{color:var(--ban-fg);font-weight:500}
+
+    .info-trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+    .info-cell{padding:11px 13px;border-radius:8px;border:1px solid var(--line-card);background:#fff;border-top:3px solid #9dc0f5;display:flex;flex-direction:column;gap:6px;min-width:0}
+    .info-cell.is-org{border-top-color:#74b9a3}
+    .info-cell b{font-size:12px;font-weight:600;color:var(--ink-main)}
+    .info-cell .info-line{font-size:11.5px;color:var(--ink-sub);line-height:1.4;display:flex;align-items:center;gap:5px}
+    .ext-note{padding:5px 8px;border-radius:5px;background:#f4f8ff;color:var(--brand-ink);font-size:11px;line-height:1.35}
+    .ext-note.is-plaza{background:var(--lib-plaza-bg);color:var(--lib-plaza-fg)}
+
+    .state-grid{display:grid;grid-template-columns:1fr 208px 1fr;gap:12px;align-items:stretch}
+    .state-card{padding:14px 15px;border-radius:8px;border:1px solid var(--line-card);background:#f8fafd;display:flex;flex-direction:column;gap:9px;min-width:0}
+    .state-card.is-custom{background:var(--brand-bg);border-color:var(--brand-border)}
+    .state-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px}.state-head b{font-size:13px;font-weight:600;color:var(--ink-main)}.state-card.is-custom .state-head b{color:var(--brand-ink)}
+    .state-mech{font-size:11.5px;color:var(--ink-sub);line-height:1.45}
+    .ui-sample{margin-top:auto;padding:7px 9px;border-radius:6px;background:#fff;display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--ink-sub)}
+    .ui-sample-line{display:flex;align-items:center;flex-wrap:wrap;gap:5px;line-height:1.35}
+    .ui-chip{padding:1px 6px;border-radius:4px;background:#eef3fa;color:var(--brand-ink);font-weight:500}
+    .ui-chip.is-lock{background:var(--lock-bg);color:var(--lock-fg)}
+
+    .state-bridge{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0}
+    .bridge-dir{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--brand-ink)}
+    .bridge-dir.is-back{color:var(--ink-sub)}
+    .confirm-gate{width:100%;padding:9px 10px;border-radius:7px;background:var(--warn-bg);border:1px solid var(--warn-bd);text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .confirm-gate strong{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:var(--warn-fg)}
+    .confirm-gate span{font-size:10.5px;color:#7c5b24;line-height:1.4}
+
+    .timeline-stack{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+    .timeline-strip{padding:10px 14px;border-radius:8px;border:1px solid #e3ebf5;background:#fafbfd;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+    .tl-tag{padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+    .tl-tag.is-brand{background:var(--brand-bg);color:var(--brand-ink)}
+    .tl-tag.is-warn{background:var(--warn-bg);color:var(--warn-fg)}
+    .tl-step{padding:4px 9px;border-radius:6px;background:#fff;border:1px solid #e1e8f2;font-size:11.5px;color:var(--ink-sub)}
+    .tl-result{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;font-size:11.5px;font-weight:600}
+    .tl-result.is-brand{background:var(--brand-bg);border:1px solid var(--brand-border);color:var(--brand-ink)}
+    .tl-result.is-warn{background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-fg)}
+
+    .isolation-grid{display:grid;grid-template-columns:1.28fr 106px 1fr;gap:0;align-items:stretch}
+    .step-strip{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+    .step-chip{padding:3px 8px;border-radius:5px;background:#f4f7fb;font-size:11px;font-weight:500;color:var(--ink-main)}
+    .branch-panel{margin-top:4px;padding:8px 9px;border-radius:6px;background:#f7f9fc;display:flex;flex-direction:column;gap:6px}
+    .branch-pair{display:flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:11px;color:var(--ink-sub)}
+    .branch-pair b{color:var(--ink-main);font-weight:600}
+    .iso-wall{position:relative;display:flex;align-items:center;justify-content:center;min-height:100%}
+    .iso-wall::before{content:"";position:absolute;top:4px;bottom:4px;left:50%;border-left:1.5px dashed var(--draft-bd)}
+    .iso-badge{position:relative;z-index:1;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:999px;background:#fff;border:1px dashed #9cb7de;color:var(--draft-fg);font-size:10.5px;font-weight:600;white-space:nowrap}
+    .iso-rules{display:flex;flex-direction:column;gap:7px}
+    .iso-rule{display:flex;align-items:flex-start;gap:6px;padding:6px 8px;border-radius:5px;background:#f8fafd;font-size:11.5px;line-height:1.4;color:var(--ink-sub)}
+    .iso-rule svg{margin-top:2px;color:var(--ban-fg)}.iso-rule.is-ok svg{color:var(--brand-ink)}
+
+    .transfer-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;align-items:stretch}
+    .transfer{padding:15px 16px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;display:flex;flex-direction:column;gap:12px;min-width:0}
+    .transfer-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.transfer-head h4{font-size:13px;font-weight:600;color:var(--ink-main);margin:0}
+    .route-box{flex:1;padding:12px;border-radius:7px;background:var(--bg-subtle);display:flex;flex-direction:column;justify-content:center;gap:8px}
+    .route-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;font-size:11.5px;color:var(--ink-sub)}
+    .route-node{padding:5px 10px;border-radius:5px;background:#fff;border:1px solid #dde6f2;font-size:11.5px;font-weight:600;color:var(--ink-main)}
+    .route-node.is-p{background:var(--lib-personal-bg);border-color:var(--lib-personal-bd);color:var(--lib-personal-fg)}
+    .route-node.is-s{background:var(--lib-shared-bg);border-color:var(--lib-shared-bd);color:var(--lib-shared-fg)}
+    .route-node.is-z{background:var(--lib-plaza-bg);border-color:var(--lib-plaza-bd);color:var(--lib-plaza-fg)}
+    .route-note{font-size:11px;color:var(--ink-muted)}
+    .route-banner{display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 10px;border-radius:6px;font-size:11px;font-weight:500;text-align:center}
+    .route-banner.is-ban{background:var(--ban-bg);border:1px solid var(--ban-bd);color:var(--ban-fg)}
+    .route-banner.is-ok{background:var(--ok-bg);border:1px solid var(--ok-bd);color:var(--ok-fg)}
+    .kv-list{display:flex;flex-direction:column;gap:7px}
+    .kv-row{display:flex;align-items:flex-start;gap:9px;font-size:11.5px;line-height:1.45;color:var(--ink-sub)}
+    .kv-key{width:44px;flex-shrink:0;text-align:center;padding:2px 0;border-radius:5px;background:#eef3fa;color:var(--brand-ink);font-size:11px;font-weight:600;line-height:1.35}
+
+    .consistency{display:flex;align-items:center;justify-content:center;gap:8px 18px;flex-wrap:wrap;margin-top:20px;padding:11px;background:#f5f8fc;border-radius:7px;font-size:11px;color:#8192a8}.consistency b{font-weight:500;color:#5d789b}
     footer{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e2e8f0;margin-top:28px;padding-top:17px;font-size:11px;color:#90a0b5}footer a{color:#547eb4}
-    @media(max-width:780px){main{padding:28px 18px 40px}.topbar-inner{padding:12px 18px}.version{display:none}h1{font-size:27px}.diagram{padding:16px}.entry-row,.libraries{grid-template-columns:1fr}.entry{padding:12px}.section-head{align-items:flex-start;flex-direction:column;gap:3px}.grant-map{grid-template-columns:1fr}.grant-map>.arrow{transform:rotate(90deg);padding:3px}.levels{grid-template-columns:1fr 20px 1fr}.levels>.arrow:nth-of-type(2){grid-column:1/-1;transform:rotate(90deg)}.merge{grid-template-columns:1fr 20px 1fr}.merge>.arrow:last-of-type{grid-column:1/-1;transform:rotate(90deg)}.merge>.result{grid-column:1/-1}.responsibility{grid-template-columns:1fr}.responsibility>.arrow{transform:rotate(90deg)}.transfer-grid{grid-template-columns:1fr}.fixed-type{font-size:10px}.content-line{gap:8px}.content-line small{flex-basis:100%;text-align:center}footer{align-items:flex-start;flex-direction:column}}
-    @media(max-width:420px){.brand{font-size:13px}.enter{padding:7px 10px}.topbar-inner{gap:8px}.protected-people{flex-direction:column}.merge .node{padding:10px 5px}.levels{gap:4px}.level{padding:11px 7px}}
-    @media print{.topbar,.anchors,footer a{display:none}body{background:#fff}main{max-width:none;padding:0}section{margin-top:24px}.permission-part,.library-frame,.entry-row{break-inside:avoid}.diagram{padding:16px}h1{font-size:27px}}
+
+    @media(max-width:960px){
+      .strip-outcome{flex:0 0 auto;margin-left:auto}
+      .strip-outcome::before{display:none}
+    }
+    @media(max-width:780px){
+      main{padding:28px 18px 40px}.topbar-inner{padding:12px 18px}.version{display:none}h1{font-size:27px}.diagram{padding:16px}
+      .entry-row,.libraries,.usage-grid,.baseline-grid,.split-panel,.info-trio,.state-grid,.isolation-grid,.transfer-grid{grid-template-columns:1fr}
+      .usage-grid .span-2{grid-column:auto}
+      .entry{padding:12px}.section-head{align-items:flex-start;flex-direction:column;gap:3px}
+      .grant-map{grid-template-columns:1fr}.grant-map>.arrow{transform:rotate(90deg);padding:3px}
+      .levels{grid-template-columns:1fr 20px 1fr}.levels>.arrow:nth-of-type(2){grid-column:1/-1;transform:rotate(90deg)}
+      .flow-row.is-upload,.flow-row.is-4,.flow-row.is-3{grid-template-columns:1fr}
+      .flow-arrow{margin:2px auto;transform:rotate(90deg)}
+      .state-bridge{gap:6px}
+      .bridge-dir svg{transform:rotate(90deg)}.bridge-dir.is-back svg{transform:rotate(-90deg)}
+      .iso-wall{height:38px;width:100%;min-height:38px}
+      .iso-wall::before{top:50%;bottom:auto;left:4px;right:4px;border-left:0;border-top:1.5px dashed var(--draft-bd)}
+      .formula-label,.tl-tag{width:100%}
+      .strip-outcome{width:100%;flex:0 0 100%;flex-direction:column;align-items:stretch;gap:6px;margin-left:0;min-width:0}
+      .strip-outcome::before{display:none}
+      .strip-outcome>.ico-arr{margin:0 auto;transform:rotate(90deg)}
+      .formula-result,.tl-result{width:100%;justify-content:center}
+      .fixed-type{font-size:10px}.content-line{gap:8px}.content-line small{flex-basis:100%;text-align:center}footer{align-items:flex-start;flex-direction:column}
+    }
+    @media(max-width:520px){
+      .mini-win-grid,.pin-split,.term-grid{grid-template-columns:1fr}
+      .search-row{flex-direction:column;align-items:flex-start;gap:5px}
+    }
+    @media(max-width:420px){
+      .brand{font-size:13px}.enter{padding:7px 10px}.topbar-inner{gap:8px}
+      .diagram{padding:14px}.diag-card,.flow-panel,.transfer{padding:12px}
+      .levels{gap:4px;grid-template-columns:1fr 16px 1fr}.level{padding:11px 7px}
+      .kv-key{width:42px}
+    }
+    @media print{
+      *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .topbar,.anchors,footer a{display:none}body{background:#fff}main{max-width:none;padding:0}section{margin-top:24px}
+      .permission-part,.library-frame,.entry-row,.diag-card,.flow-panel,.baseline-grid,.split-panel,.info-trio,.state-grid,.timeline-strip,.isolation-grid,.transfer{break-inside:avoid;page-break-inside:avoid}
+      .diagram{padding:16px}h1{font-size:27px}
+    }
   </style>
 </head>
 <body>
   <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
-    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></symbol>
-    <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C9 3 5 3 3 4v16c3-1 6-1 9 1 3-2 6-2 9-1V4c-2-1-6-1-9 1Zm0 0v16"/></symbol>
-    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2M4 5a3 3 0 0 0 0 6m16-6a3 3 0 0 1 0 6M2 18a5 5 0 0 1 3-5m17 5a5 5 0 0 0-3-5"/></symbol>
-    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></symbol>
-    <symbol id="i-ai" viewBox="0 0 24 24"><path d="m12 3 2.8 6.2L21 12l-6.2 2.8L12 21l-2.8-6.2L3 12l6.2-2.8ZM20 2v4m-2-2h4"/></symbol>
-    <symbol id="i-recycle" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></symbol>
-    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h7l2 3h9v11H3Zm0 3V5h7l2 3"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5M5 9.5V20h5v-5h4v5h5V9.5"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5Zm0 14A2.5 2.5 0 0 1 6.5 17H20"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 19a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.2"/><path d="M16 14a5 5 0 0 1 5 5"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><ellipse cx="12" cy="12" rx="4" ry="9"/></symbol>
+    <symbol id="i-ai" viewBox="0 0 24 24"><path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z"/></symbol>
+    <symbol id="i-recycle" viewBox="0 0 24 24"><path d="M3 6h18m-2 0-1 14H6L5 6m4 0V4h6v2m-5 4v6m4-6v6"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3Z"/></symbol>
     <symbol id="i-file" viewBox="0 0 24 24"><path d="M5 3h9l5 5v13H5Zm9 0v5h5M8 12h8m-8 4h6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.2 8.4 6.5 11.7 12.8 4.8"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="M4.2 4.2 11.8 11.8M11.8 4.2 4.2 11.8"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 16 16"><rect x="3.5" y="7.2" width="9" height="6.3" rx="1.4"/><path d="M5.5 7.2V5.3a2.5 2.5 0 0 1 5 0v1.9"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 16 16"><path d="M8 2.2 13 4.2v3.7c0 3-2 5-5 6.1-3-1.1-5-3.1-5-6.1V4.2L8 2.2Z"/><path d="M5.9 8.1 7.4 9.6 10.4 6.4"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 16 16"><path d="M8 2.4 14 13H2L8 2.4Z"/><path d="M8 6.4v3.1M8 11.3h.01"/></symbol>
+    <symbol id="i-arrow-r" viewBox="0 0 16 16"><path d="M2.8 8h10.2M9.5 4.5 13 8l-3.5 3.5"/></symbol>
+    <symbol id="i-arrow-dbl" viewBox="0 0 16 16"><path d="M2.5 6.2h8.4M2.5 9.8h8.4M9.4 4l3.6 4-3.6 4"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 16 16"><path d="M3 5.5h10M10.2 3 13 5.5 10.2 8M13 10.5H3M5.8 8 3 10.5 5.8 13"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 16 16"><path d="M3.6 6.4a4.8 4.8 0 1 1 .5 4.9M3.2 3.2v3.4h3.4"/></symbol>
+    <symbol id="i-ban-wall" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M4.2 4.2 11.8 11.8"/></symbol>
+    <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7.2" cy="7.2" r="4.3"/><path d="m10.5 10.5 2.8 2.8"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 16 16"><path d="M8 11.5V3.5M4.8 6.5 8 3.3l3.2 3.2M3 13h10"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 16 16"><circle cx="5.8" cy="4.2" r=".8" fill="currentColor" stroke="none"/><circle cx="10.2" cy="4.2" r=".8" fill="currentColor" stroke="none"/><circle cx="5.8" cy="8" r=".8" fill="currentColor" stroke="none"/><circle cx="10.2" cy="8" r=".8" fill="currentColor" stroke="none"/><circle cx="5.8" cy="11.8" r=".8" fill="currentColor" stroke="none"/><circle cx="10.2" cy="11.8" r=".8" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3.5v9M3.5 8h9"/></symbol>
+    <symbol id="i-img" viewBox="0 0 16 16"><rect x="2.5" y="3.2" width="11" height="9.6" rx="1.4"/><circle cx="6" cy="6.4" r="1"/><path d="m3.5 11.4 3.1-3.1 2.2 2.1 1.7-1.6 2.2 2.6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 7.3v3.4M8 5.2h.01"/></symbol>
+    <symbol id="i-more" viewBox="0 0 16 16"><circle cx="4" cy="8" r=".9" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="8" r=".9" fill="currentColor" stroke="none"/></symbol>
   </defs></svg>
   <header class="topbar"><div class="topbar-inner"><span class="brand-mark" aria-hidden="true">知</span><span class="brand">企业知识库</span><span class="version">产品架构与权限体系</span><a class="enter" href="./#/home">进入原型 →</a></div></header>
   <main>
@@ -59,12 +341,134 @@
         <div class="shared-tools"><b>共用能力</b><span>新建与上传（含文件夹）</span><span>全局搜索（含历史）与库内搜索</span><span>收藏 · 置顶知识库 / 文件夹 / 文件</span><span>详情 · 封面背景</span><span>移动 · 复制 · 批量操作</span><span>内部分享与权限管理</span></div>
 
         <div class="permission-part">
-          <div class="part-title"><h3>使用说明</h3></div>
-          <p class="caption">问 AI 主页面覆盖提示「一期暂不开发」，点「继续查看」后在本浏览器会话内不再出现，侧栏仍可使用。文档、表格、幻灯片的编辑区域提示「OnlyOffice 区域」，同样可在本会话内继续查看，顶栏已有操作都保留。</p>
-          <p class="caption">主页、知识广场、共享知识库、个人知识库列表页不再提供「搜索文档」。左侧全局搜索可跨库查找，并保留最近关键词（去重、约 10 条，可点击再搜或清除历史）；进入知识库后仍可「搜索当前文件夹」。</p>
-          <p class="caption">「上传文件」只提供「选择本地文件」，「上传文件夹」只提供「选择文件夹」。文件夹只接受内部全是文件的目录，不能包含子文件夹，也不保留目录层级。选好后在独立弹窗查看已选文件（名称、大小、可移除），主弹窗保留位置和「开始上传」。</p>
-          <p class="caption">左侧「置顶」可同时放置知识库、文件夹和文件，用原有图标区分；在「更多」中置顶或取消置顶，可拖拽排序。置顶属于当前身份。点击置顶项即可打开。主页等列表不再显示「指定成员」「仅自己」一类可见性标签。</p>
-          <p class="caption">文件和文件夹的「更多」提供只读「详情」：名称、类型、位置、负责人、创建时间、更新时间；文件另有大小。知识库详情封面仅该库负责人可改，从封面入口选择本地图片，立即预览并保存在原型本地状态。列表时间统一称「更新时间」；界面文案「管理人」已改为「负责人」，权限角色名「可管理」不变。</p>
+          <div class="part-title"><h3>使用说明</h3><small>原型占位 · 搜索 · 上传 · 置顶 · 详情与命名</small></div>
+          <div class="usage-grid">
+            <article class="diag-card">
+              <div class="diag-head"><b>原型占位边界</b><span class="diag-tag">本会话可继续查看</span></div>
+              <div class="mini-win-grid" role="group" aria-label="问 AI 主页提示一期暂不开发且侧栏可用，文档表格幻灯片编辑区提示 OnlyOffice 区域且顶栏保留">
+                <div class="mini-win is-side">
+                  <div class="mini-bar-side">侧栏<br>可用</div>
+                  <div class="mini-overlay is-ai">
+                    <strong>问 AI 主页</strong>
+                    <span class="pill pill-ai">一期暂不开发</span>
+                  </div>
+                </div>
+                <div class="mini-win">
+                  <div class="mini-bar-top"><span class="mini-dots" aria-hidden="true"><i></i><i></i></span>顶栏操作保留</div>
+                  <div class="mini-overlay is-oo">
+                    <strong>文档 / 表格 / 幻灯片</strong>
+                    <span class="pill pill-lock">OnlyOffice 区域</span>
+                  </div>
+                </div>
+              </div>
+              <div class="status-strip"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>点「继续查看」→ 本浏览器会话内不再弹出</span></div>
+            </article>
+
+            <article class="diag-card">
+              <div class="diag-head"><b>搜索入口分工</b></div>
+              <div class="search-list" role="group" aria-label="左侧全局搜索跨库并留约10条历史，进库可搜当前文件夹，列表页不提供搜索文档">
+                <div class="search-row is-primary">
+                  <span class="search-badge"><svg class="ico-sm" aria-hidden="true"><use href="#i-search"/></svg>左侧全局搜索</span>
+                  <span class="search-desc"><b>跨库查找</b> · 最近约 10 条去重历史（点击再搜 / 清除）</span>
+                </div>
+                <div class="search-row">
+                  <span class="search-badge"><svg class="ico-sm" aria-hidden="true"><use href="#i-search"/></svg>库内搜索</span>
+                  <span class="search-desc"><b>进库后可用</b> · 搜索当前文件夹</span>
+                </div>
+                <div class="search-row is-ban">
+                  <span class="search-badge"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>列表页不提供「搜索文档」</span>
+                  <span class="search-desc">主页 / 知识广场 / 共享库 / 个人库</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="flow-panel span-2">
+              <div class="diag-head"><b>上传流程</b><span class="diag-tag">文件与文件夹入口分离</span></div>
+              <div class="flow-row is-upload" role="group" aria-label="上传文件仅选本地文件，上传文件夹仅选全是文件的目录且不含子文件夹不留层级，经独立已选弹窗查看移除后再于主弹窗开始上传">
+                <div class="upload-branches">
+                  <div class="branch-line">
+                    <span class="branch-head"><svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg>上传文件</span>
+                    <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                    <span class="pill pill-brand">仅「选择本地文件」</span>
+                  </div>
+                  <div class="branch-line">
+                    <span class="branch-head"><svg class="ico" aria-hidden="true"><use href="#i-folder"/></svg>上传文件夹</span>
+                    <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                    <span class="pill pill-brand">仅「选择文件夹」</span>
+                    <span class="pill pill-lock">仅含文件目录</span>
+                    <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>不含子文件夹</span>
+                    <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>不留目录层级</span>
+                  </div>
+                </div>
+                <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
+                <div class="mini-pop">
+                  <div class="mini-pop-head"><span>独立已选弹窗</span><span class="mini-dots" aria-hidden="true"><i></i><i></i></span></div>
+                  <div class="mini-pop-body">
+                    <div class="mini-file-line">
+                      <span><svg class="ico-sm" aria-hidden="true"><use href="#i-file"/></svg>文件名 · 大小</span>
+                      <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>可移除</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
+                <div class="mini-pop is-brand">
+                  <div class="mini-pop-head"><span>上传主弹窗</span></div>
+                  <div class="mini-pop-body">
+                    <span>保留目标位置</span>
+                    <span class="mini-btn">开始上传</span>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="diag-card">
+              <div class="diag-head"><b>左侧置顶与列表简化</b></div>
+              <div class="pin-split" role="group" aria-label="左侧置顶同时放置知识库、文件夹和文件，以原图标区分，可拖拽排序并归属当前身份">
+                <div class="mini-side">
+                  <div class="mini-side-title">置顶</div>
+                  <div class="mini-side-item"><span><svg class="ico" aria-hidden="true"><use href="#i-book"/></svg>知识库</span><svg class="ico grip" aria-hidden="true"><use href="#i-grip"/></svg></div>
+                  <div class="mini-side-item"><span><svg class="ico" aria-hidden="true"><use href="#i-folder"/></svg>文件夹</span><svg class="ico grip" aria-hidden="true"><use href="#i-grip"/></svg></div>
+                  <div class="mini-side-item"><span><svg class="ico" aria-hidden="true"><use href="#i-file"/></svg>文件</span><svg class="ico grip" aria-hidden="true"><use href="#i-grip"/></svg></div>
+                </div>
+                <div class="rule-chips">
+                  <div class="rule-chip">原图标区分三类对象</div>
+                  <div class="rule-chip">「更多」置顶 / 取消 · 拖拽排序</div>
+                  <div class="rule-chip">置顶归属当前身份</div>
+                  <div class="rule-chip">点击置顶项直接打开</div>
+                </div>
+              </div>
+              <div class="ban-strip">
+                <span class="strike-tag">指定成员</span>
+                <span class="strike-tag">仅自己</span>
+                <svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>
+                <span>主页等列表不再显示此类可见性标签</span>
+              </div>
+            </article>
+
+            <article class="diag-card">
+              <div class="diag-head"><b>详情、封面与命名统一</b></div>
+              <div class="detail-stack">
+                <div class="detail-row">
+                  <span class="detail-label"><svg class="ico" aria-hidden="true"><use href="#i-info"/></svg>更多 → 只读详情</span>
+                  <span class="field-tag">名称</span>
+                  <span class="field-tag">类型</span>
+                  <span class="field-tag">位置</span>
+                  <span class="field-tag">负责人</span>
+                  <span class="field-tag">创建时间</span>
+                  <span class="field-tag">更新时间</span>
+                  <span class="pill pill-brand">文件另含：大小</span>
+                </div>
+                <div class="detail-row">
+                  <span class="cover-thumb" aria-hidden="true"><svg class="ico"><use href="#i-img"/></svg></span>
+                  <span class="cover-desc"><b>知识库封面仅该库负责人可改</b> · 选本地图立即预览 · 存原型本地状态</span>
+                </div>
+                <div class="term-grid">
+                  <div class="term-box"><span>管理人</span><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><b>负责人</b><small>权限档仍叫「可管理」</small></div>
+                  <div class="term-box"><span>列表时间</span><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><b>更新时间</b></div>
+                </div>
+              </div>
+            </article>
+          </div>
         </div>
       </div>
     </section>
@@ -74,53 +478,334 @@
       <div class="diagram">
         <div class="permission-part">
           <div class="part-title"><span>01</span><h3>四档权限</h3><small>逐级包含 · 多来源取高</small></div>
-          <div class="levels" role="group" aria-label="仅查看、可查看并下载、可编辑、可管理，右侧包含左侧能力">
-            <div class="level"><b>仅查看</b><p>在线阅读</p></div><i class="arrow" aria-hidden="true">→</i>
-            <div class="level"><b>可查看并下载</b><p>下载 · 打印 · 复制</p></div><i class="arrow" aria-hidden="true">→</i>
-            <div class="level"><b>可编辑</b><p>编辑 · 新建 · 上传</p></div><i class="arrow" aria-hidden="true">→</i>
-            <div class="level"><b>可管理</b><p>授权 · 移动 · 删除</p></div>
+          <div class="levels" role="group" aria-label="仅查看、可查看并下载、可编辑、可管理，右侧逐级包含左侧能力">
+            <div class="level"><div><b>仅查看</b><p>在线阅读</p></div><div class="level-meter" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div></div><i class="arrow" aria-hidden="true">→</i>
+            <div class="level"><div><b>可查看并下载</b><p>下载 · 打印 · 复制</p></div><div class="level-meter" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i></div></div><i class="arrow" aria-hidden="true">→</i>
+            <div class="level"><div><b>可编辑</b><p>编辑 · 新建 · 上传</p></div><div class="level-meter" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div><i class="arrow" aria-hidden="true">→</i>
+            <div class="level"><div><b>可管理</b><p>授权 · 移动 · 删除</p></div><div class="level-meter" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
           </div>
+
           <div class="grant-map" role="group" aria-label="有管理权限的人可向公司、部门或人员授予四档协作权限，适用于知识库、文件夹和文件">
             <div class="node blue"><b>有管理权限的人</b><small>管理四档协作权限、切换模式</small></div><i class="arrow" aria-hidden="true">→</i>
             <div class="subjects"><span>公司</span><span>部门</span><span>人员</span></div><i class="arrow" aria-hidden="true">→</i>
             <div class="node"><div class="resource-tree"><span>知识库</span><i class="arrow" aria-hidden="true">→</i><span>文件夹</span><i class="arrow" aria-hidden="true">→</i><span>文件</span></div><small>文件是叶子</small></div>
           </div>
-          <p class="caption">四档权限从左到右逐级包含；同一人若同时来自公司、部门、人员等不同授权对象，在同一模式下按较高档生效。</p>
-          <p class="caption">三类知识库权限底线不同：个人知识库仅本人查看和管理，不能直接添加协作者，协作前需先移动到共享知识库或知识广场；共享知识库按授权协作，创建时可以先不添加权限并保存；知识广场始终保留公司全员在线查看底线，编辑、下载和管理可另外授权。</p>
-          <p class="caption">知识库本身没有父级，不做继承 / 自定义切换，只配置负责人和四档协作权限。</p>
-          <p class="caption">权限管理添加协作者（知识库或自定义模式下）：选择公司 / 部门 / 人员 → 添加协作者确认层（默认「可查看并下载」，支持批量或逐行调整）→ 确认进入权限草稿 → 保存权限后生效；取消不添加，放弃草稿不生效。内部分享仅面向系统内部，不生成分享链接。</p>
+
+          <div class="formula-bar" role="group" aria-label="同一人同时来自公司、部门、人员多个授权来源时，在同一模式下按最高档生效">
+            <div class="formula-label"><b>多来源取高</b><small>同一人 · 同一模式</small></div>
+            <span class="formula-item">公司 <b>仅查看</b></span>
+            <span class="formula-op" aria-hidden="true">＋</span>
+            <span class="formula-item is-win">部门 <b>可编辑</b></span>
+            <span class="formula-op" aria-hidden="true">＋</span>
+            <span class="formula-item">人员 <b>可查看并下载</b></span>
+            <span class="strip-outcome">
+              <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-dbl"/></svg>
+              <span class="formula-result">生效：可编辑</span>
+            </span>
+          </div>
+
+          <div class="baseline-grid" role="group" aria-label="三类知识库权限底线：个人库仅本人不可直接加人、共享库按授权且创建可先不加权保存、广场全员固定仅查看">
+            <article class="baseline-card">
+              <div class="baseline-head"><span><svg class="ico" aria-hidden="true"><use href="#i-book"/></svg>个人知识库</span><span class="baseline-tag">仅本人</span></div>
+              <div class="baseline-rule"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg><span>仅本人查看和管理</span></div>
+              <div class="baseline-rule is-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>不能直接添加协作者</span></div>
+              <div class="baseline-rule is-brand"><svg class="ico-sm" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>协作须先移至共享库 / 广场</span></div>
+            </article>
+            <article class="baseline-card shared">
+              <div class="baseline-head"><span><svg class="ico" aria-hidden="true"><use href="#i-people"/></svg>共享知识库</span><span class="baseline-tag">按授权</span></div>
+              <div class="baseline-rule is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>按授权开展内部协作</span></div>
+              <div class="baseline-rule is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>创建可先不加权限保存</span></div>
+            </article>
+            <article class="baseline-card plaza">
+              <div class="baseline-head"><span><svg class="ico" aria-hidden="true"><use href="#i-globe"/></svg>知识广场</span><span class="baseline-tag">全员底线</span></div>
+              <div class="baseline-rule is-warn"><svg class="ico-sm" aria-hidden="true"><use href="#i-shield"/></svg><span>公司全员固定「仅查看」</span></div>
+              <div class="baseline-rule is-brand"><svg class="ico-sm" aria-hidden="true"><use href="#i-plus"/></svg><span>下载 / 编辑 / 管理可另授</span></div>
+            </article>
+          </div>
+          <div class="common-ribbon"><b>知识库级规则</b><span>知识库本身无父级 · 不做继承 / 自定义切换 · 共享库与广场仅配负责人与四档协作权限</span></div>
+
+          <div class="flow-panel stack-gap" role="group" aria-label="知识库或自定义模式下添加协作者流程：选对象、确认层默认可查看并下载支持批量或逐行调整、进权限草稿、保存生效；取消或放弃不生效；仅限内部不生成分享链接">
+            <div class="diag-head">
+              <div class="pill-row"><b>添加协作者流程</b><span class="diag-tag">知识库 / 自定义模式</span></div>
+              <span class="pill pill-lock"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>仅限系统内部 · 不生成分享链接</span>
+            </div>
+            <div class="flow-row is-4">
+              <div class="flow-node"><b>1. 选授权对象</b><small>公司 / 部门 / 人员</small></div>
+              <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
+              <div class="flow-node"><b>2. 确认层调权</b><small>默认「可查看并下载」· 批量/逐行调</small></div>
+              <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
+              <div class="flow-node is-draft"><b>3. 进入权限草稿</b><small>暂存未提交</small></div>
+              <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
+              <div class="flow-node is-done"><b>4. 保存权限生效</b><small>正式应用授权</small></div>
+            </div>
+            <div class="flow-abort">
+              <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>确认层点取消 → 不添加</span>
+              <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>放弃草稿 → 不生效</span>
+            </div>
+          </div>
         </div>
 
         <div class="permission-part">
           <div class="part-title"><span>02</span><h3>特殊权限-负责人</h3><small>上置展示 · 菜单交接</small></div>
-          <div class="responsibility" role="group" aria-label="知识库负责人和本项负责人固定展示在权限区上方，同一人合并为一行">
-            <div class="protected-people"><span>知识库负责人</span><span>本项负责人</span></div><i class="arrow" aria-hidden="true">→</i><div class="node blue"><b>固定展示在权限区上方</b><small>不进入权限列表，不显示由谁添加</small></div>
+          <div class="split-panel">
+            <article class="diag-card">
+              <div class="diag-head"><b>权限弹窗分层</b><span class="diag-tag">每级 1 位 · 默认创建人 · 全部权限</span></div>
+              <div class="mini-modal" role="group" aria-label="权限面板上层固定展示知识库负责人和本项负责人，不进权限列表不显示添加者，同一人合并一行；下层为普通四档协作权限列表">
+                <div class="modal-zone-top">
+                  <div class="zone-label"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg><span>固定展示在权限区上方 · 不进列表 · 不显由谁添加</span></div>
+                  <div class="modal-row"><span class="modal-person"><span class="avatar-dot" aria-hidden="true">库</span>知识库负责人</span><span class="pill pill-brand">上置固定</span></div>
+                  <div class="modal-row"><span class="modal-person"><span class="avatar-dot" aria-hidden="true">项</span>本项负责人</span><span class="pill pill-lock">同人合并 1 行</span></div>
+                  <div class="zone-note">注：知识库自身仅显示 1 位负责人</div>
+                </div>
+                <div class="modal-zone-list">
+                  <div class="zone-label">普通四档协作权限列表</div>
+                  <div class="skel-row" aria-hidden="true"><div class="skel-left"><span class="skel-dot"></span><span class="skel-bar"></span></div><span class="skel-role">可编辑</span></div>
+                  <div class="skel-row" aria-hidden="true"><div class="skel-left"><span class="skel-dot"></span><span class="skel-bar is-short"></span></div><span class="skel-role">仅查看</span></div>
+                </div>
+              </div>
+            </article>
+
+            <div class="protect-stack" role="group" aria-label="知识库负责人在下级始终保护不可移除降权，祖先文件夹负责人无特殊保护在下级进入普通列表">
+              <article class="protect-card is-brand">
+                <div class="protect-head">
+                  <span><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>知识库负责人</span>
+                  <span class="pill pill-brand">下级始终保护</span>
+                </div>
+                <div class="mini-path">
+                  <span class="path-node">知识库</span>
+                  <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                  <span class="path-node">文件夹</span>
+                  <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                  <span class="path-node">文件</span>
+                </div>
+                <div class="pill-row">
+                  <span class="pill pill-lock"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>不可移除</span>
+                  <span class="pill pill-lock"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>不可降权</span>
+                  <span class="pill pill-brand">转自定义后仍保护</span>
+                </div>
+              </article>
+
+              <article class="protect-card">
+                <div class="protect-head">
+                  <span>祖先文件夹负责人</span>
+                  <span class="pill pill-warn">不做特殊保护</span>
+                </div>
+                <div class="mini-path">
+                  <span class="path-node">上级文件夹负责人</span>
+                  <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                  <span class="path-node">下级普通列表（可管理）</span>
+                </div>
+                <div class="pill-row">
+                  <span class="pill pill-lock">进普通权限列表</span>
+                  <span class="pill pill-warn">转自定义后可改 / 可移</span>
+                </div>
+              </article>
+            </div>
           </div>
-          <div class="ownership-note"><span><b>历史创建人</b>：保留创建记录</span><span><b>交接后</b>：原负责人完全退出该项负责人身份</span></div>
-          <p class="caption">每一级只有一位本项负责人，默认是创建人，拥有该项全部权限。文件夹和文件上方展示知识库负责人和本项负责人，同一人时合并为一行；知识库自身只显示一位负责人。</p>
-          <p class="caption">知识库负责人在下级始终不可移除、不可降权，转为自定义后也一样。祖先文件夹负责人不做特殊保护：在下级继承为「可管理」，放入普通权限列表，转为自定义后可以修改或移除。</p>
-          <p class="caption">交接入口不在权限弹窗里。有交接权限的人可从知识库详情顶栏「设置」旁的「更多操作」，或文件、文件夹及文档页的「更多操作」菜单选择「交接负责人」；个人库不提供负责人交接。本项负责人和知识库负责人都可以转交该内容的负责人；仅继承来的「可管理」不能转交本项负责人。转交后原负责人不再因曾是负责人而留下可管理；若同时是知识库负责人，仍保留知识库负责人身份。</p>
-          <p class="caption">新建与设置页展示：新建个人库隐藏权限配置区，仅以列表外说明展示「负责人：名字，拥有全部权限」；个人库设置只保留类型和历史创建人 / 当前负责人说明，不再单独展示负责人权限。新建共享 / 广场库的负责人也用外部说明，广场另有「全员查看：组织名，公司成员默认可查看」。</p>
+
+          <div class="flow-panel stack-gap" role="group" aria-label="交接负责人从更多操作菜单进入，不在权限弹窗内，个人库不交接；本项负责人与知识库负责人可转交，仅继承可管理不可转交；交接后原负责人完全退出，历史创建人保留记录">
+            <div class="diag-head">
+              <b>交接负责人流程与权责</b>
+              <div class="pill-row">
+                <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>不在权限弹窗内</span>
+                <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>个人库不提供交接</span>
+              </div>
+            </div>
+            <div class="flow-row is-3">
+              <div class="handover-col">
+                <div class="handover-title"><svg class="ico" aria-hidden="true"><use href="#i-more"/></svg>触发入口 · 选「交接负责人」</div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>知识库详情顶栏「设置」旁 → 更多操作</span></div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>文件 / 文件夹 / 文档页 → 更多操作</span></div>
+              </div>
+              <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
+              <div class="handover-col">
+                <div class="handover-title">谁可转交</div>
+                <div class="handover-item is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>本项负责人</span></div>
+                <div class="handover-item is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>知识库负责人</span></div>
+                <div class="handover-item is-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>仅继承「可管理」不可交接</span></div>
+              </div>
+              <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
+              <div class="handover-col">
+                <div class="handover-title">交接结果</div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>原负责人完全退出该项身份（不残留可管理）</span></div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-shield"/></svg><span>兼知识库负责人 → 仍保库负责人身份</span></div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-info"/></svg><span>历史创建人 → 始终保留创建记录</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-trio" role="group" aria-label="新建与设置页负责人外部说明：新建个人库隐藏权限配置区、个人库设置不单独展示负责人权限、新建共享与广场库外部说明负责人且广场另显全员查看">
+            <div class="info-cell">
+              <b>新建个人库</b>
+              <span class="info-line">隐藏权限配置区</span>
+              <span class="ext-note">负责人：名字，拥有全部权限</span>
+            </div>
+            <div class="info-cell">
+              <b>个人库设置</b>
+              <span class="info-line">仅保留类型 + 历史创建人 / 当前负责人</span>
+              <span class="info-line"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>不再单独展示负责人权限</span>
+            </div>
+            <div class="info-cell is-org">
+              <b>新建共享 / 广场库</b>
+              <span class="info-line">负责人以列表外说明展示</span>
+              <span class="ext-note is-plaza">广场另显 · 全员查看：组织名，公司成员默认可查看</span>
+            </div>
+          </div>
         </div>
 
         <div class="permission-part">
           <div class="part-title"><span>03</span><h3>继承模式和自定义模式</h3><small>共享库 / 广场下级内容</small></div>
-          <div class="merge" role="group" aria-label="继承模式跟随父级当前实际权限，自定义模式保存快照且不再随父级变更">
-            <div class="node">继承模式<small>跟随父级当前实际权限</small></div><i class="arrow" aria-hidden="true">＋</i><div class="node">转为自定义<small>快照当时继承的普通权限</small></div><i class="arrow" aria-hidden="true">→</i><div class="node result"><b>父级再改不影响这份快照</b></div>
+          <div class="state-grid" role="group" aria-label="继承模式与自定义模式双向切换：默认继承跟随父级不可改，有可管理权限者经双向二次确认可切换为自定义快照并自由编辑">
+            <article class="state-card">
+              <div class="state-head">
+                <b>继承模式</b>
+                <span class="pill pill-lock">默认</span>
+                <span class="diag-tag">文件夹 / 文件（叶子）</span>
+              </div>
+              <div class="state-mech">跟随直接父级当时实际权限 · 沿目录链路传递</div>
+              <div class="pill-row">
+                <span class="pill pill-lock"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>不可单独加人</span>
+                <span class="pill pill-lock"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>不可修改继承项</span>
+              </div>
+              <div class="ui-sample">
+                <div class="ui-sample-line"><span>列表显示</span><span class="ui-chip is-lock">继承权限</span><span>不可修改</span></div>
+              </div>
+            </article>
+
+            <div class="state-bridge">
+              <span class="bridge-dir"><span>转为自定义</span><svg class="ico" aria-hidden="true"><use href="#i-arrow-r"/></svg></span>
+              <div class="confirm-gate">
+                <strong><svg class="ico-sm" aria-hidden="true"><use href="#i-warn"/></svg>双向均需二次确认</strong>
+                <span>仅「可管理」可切<br>含本项 / 库负责人</span>
+                <span>取消则不切换</span>
+              </div>
+              <span class="bridge-dir is-back"><svg class="ico ico-rev" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>改回继承</span></span>
+            </div>
+
+            <article class="state-card is-custom">
+              <div class="state-head">
+                <b>自定义模式</b>
+                <span class="pill pill-brand">快照独立</span>
+              </div>
+              <div class="state-mech">快照当时继承的普通权限（不含上方负责人）</div>
+              <div class="pill-row">
+                <span class="pill pill-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg>自由加人 / 改权 / 移除</span>
+                <span class="pill pill-brand">父级再改不影响</span>
+              </div>
+              <div class="ui-sample">
+                <div class="ui-sample-line"><span class="ui-chip">自定义权限：由「某某」添加</span><span>转换/新增者 · 改权保留原添加者</span></div>
+                <div class="ui-sample-line"><span>历史未知显</span><span class="ui-chip is-lock">本项单独授权</span><span>不虚构记录</span></div>
+              </div>
+            </article>
           </div>
-          <p class="caption">文件夹和文件（叶子）默认处于继承模式，跟随直接父级当时实际生效权限沿目录链路传递。继承模式下不能单独加人，也不能修改继承项；继承项显示为「继承权限」，不可修改。</p>
-          <p class="caption">想单独加人或调整继承权限，须先转为自定义。有「可管理」权限的人（含本项负责人和知识库负责人）可在继承与自定义之间双向切换，两个方向都要二次确认，取消则不切换。</p>
-          <p class="caption">转为自定义时，把当时继承下来的普通权限快照留在本项，不含上方展示的知识库负责人和本项负责人；此后可自由加人、改权，父级后续变更不再影响这份快照。自定义项显示「自定义权限：由「某某」添加」，某某为点击转换或后来添加的人；修改已有授权保留原添加者，历史添加者未知时显示「本项单独授权」，不虚构记录。</p>
-          <p class="example">父级可编辑被快照为本项自定义可编辑后，父级再改为仅查看，本项仍为 <strong>可编辑</strong>。</p>
-          <p class="example">改回继承后，自定义的添加和修改全部失效，重新跟随父级当前实际权限。</p>
-          <p class="caption">独立分享弹窗联动：选人后先列入待新增草稿，点击「添加协作者」提交后才生效。处于继承模式的文件或文件夹，有「可管理」权限的人可在分享弹窗中确认转为自定义后再添加协作者；没有可管理权限的人提示「无权添加协作」。从分享进入权限管理不会带入未提交的待新增项；返回分享可继续原草稿，保存权限也不会顺带提交这些待新增项。</p>
+
+          <div class="timeline-stack" role="group" aria-label="两条权限变化时序：转自定义快照后不受父级变更影响；改回继承后自定义全部失效并重新跟随父级">
+            <div class="timeline-strip">
+              <span class="tl-tag is-brand">情景 1 · 转自定义后独立</span>
+              <span class="tl-step">父级：可编辑</span>
+              <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+              <span class="tl-step">本项快照：可编辑</span>
+              <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+              <span class="tl-step">父级改为：仅查看</span>
+              <span class="strip-outcome">
+                <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-dbl"/></svg>
+                <span class="tl-result is-brand">本项仍为：可编辑</span>
+              </span>
+            </div>
+            <div class="timeline-strip">
+              <span class="tl-tag is-warn">情景 2 · 改回继承后重置</span>
+              <span class="tl-step">本项自定义新增 / 修改</span>
+              <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+              <span class="tl-step">改回继承（二次确认）</span>
+              <span class="strip-outcome">
+                <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-dbl"/></svg>
+                <span class="tl-result is-warn"><svg class="ico-sm" aria-hidden="true"><use href="#i-reset"/></svg>自定义全部失效 · 重跟父级当前实际权限</span>
+              </span>
+            </div>
+          </div>
+
+          <article class="diag-card stack-gap">
+            <div class="diag-head"><b>独立分享弹窗联动与草稿隔离</b><span class="diag-tag">两处草稿相互独立</span></div>
+            <div class="isolation-grid" role="group" aria-label="独立分享弹窗选人进待新增草稿并点添加协作者生效，继承态有可管理可确认转自定义再加、无管理权提示无权添加协作；与权限管理弹窗草稿互不互通">
+              <div class="mini-pop">
+                <div class="mini-pop-head"><span>独立分享弹窗</span><span class="diag-tag">独立草稿区</span></div>
+                <div class="mini-pop-body">
+                  <div class="step-strip">
+                    <span class="step-chip">选人</span>
+                    <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                    <span class="pill pill-draft">待新增草稿</span>
+                    <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                    <span class="pill pill-brand">点「添加协作者」生效</span>
+                  </div>
+                  <div class="branch-panel">
+                    <div class="branch-pair"><b>继承态 + 有「可管理」</b><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>弹窗内确认转自定义后再加</span></div>
+                    <div class="branch-pair"><b>继承态 + 无「可管理」</b><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>无权添加协作</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="iso-wall" aria-label="分享弹窗与权限管理弹窗草稿互不互通">
+                <span class="iso-badge"><svg class="ico-sm" aria-hidden="true"><use href="#i-ban-wall"/></svg>草稿不互通</span>
+              </div>
+
+              <div class="mini-pop">
+                <div class="mini-pop-head"><span>权限管理弹窗</span><span class="diag-tag">独立保存</span></div>
+                <div class="mini-pop-body">
+                  <div class="iso-rules">
+                    <div class="iso-rule"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>从分享进入不带入未提交待新增项</span></div>
+                    <div class="iso-rule"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>保存权限不会顺带提交分享草稿</span></div>
+                    <div class="iso-rule is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-reset"/></svg><span>返回分享弹窗可继续编辑原草稿</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
         </div>
 
         <div class="permission-part">
           <div class="part-title"><span>04</span><h3>移动</h3><small>重新继承目标权限 · 附复制对照</small></div>
           <div class="transfer-grid">
-            <div class="transfer"><h4>移动原件</h4><div class="transfer-map" role="group" aria-label="个人内容可直接移动到共享库或广场，组织原件可在共享库和广场之间移动，但不可移回个人库"><b>个人库</b><i class="arrow" aria-hidden="true">→</i><b>共享库 / 广场</b></div><p>共享库 ↔ 广场：组织资料可相互移动</p><p>权限前提：管理全部源内容 ＋ 编辑目标目录</p><p>权限效果：清除原普通授权，原件及活动子内容切回继承模式并重新继承目标权限；保留原件负责人与内容历史，原位置不留副本。</p><p class="boundary">进入共享库 / 广场即属组织资料，原件不可移回个人库。</p></div>
-            <div class="transfer"><h4>复制内容（对照）</h4><div class="transfer-map" role="group" aria-label="复制保留原件，在新位置生成独立副本"><b>原件保留</b><i class="arrow" aria-hidden="true">→</i><b>新位置的独立副本</b></div><p>权限前提：查看并下载全部源内容 ＋ 编辑目标目录</p><p>权限效果：副本由复制人创建并负责，按继承模式跟随目标权限。</p><p>边界说明：可保存个人副本，组织原件不变。</p></div>
+            <article class="transfer">
+              <div class="transfer-head"><h4>移动原件</h4><span class="pill pill-lock">原位不留副本</span></div>
+              <div class="route-box" role="group" aria-label="个人内容可移动到共享库或广场，共享库和广场之间可互移，组织原件不可移回个人库">
+                <div class="route-row">
+                  <span class="route-node is-p">个人库</span>
+                  <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                  <span class="route-node is-s">共享库</span>
+                  <span class="route-note">/</span>
+                  <span class="route-node is-z">广场</span>
+                </div>
+                <div class="route-row">
+                  <span class="route-node is-s">共享库</span>
+                  <svg class="ico-arr" aria-hidden="true"><use href="#i-swap"/></svg>
+                  <span class="route-node is-z">广场</span>
+                  <span class="route-note">组织资料可互移</span>
+                </div>
+                <div class="route-banner is-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>共享库 / 广场属组织资料 · 原件不可移回个人库</span></div>
+              </div>
+              <div class="kv-list">
+                <div class="kv-row"><span class="kv-key">前提</span><span>管理全部源内容 ＋ 编辑目标目录</span></div>
+                <div class="kv-row"><span class="kv-key">权限</span><span>清除原普通授权，原件及活动子内容切回继承目标权限</span></div>
+                <div class="kv-row"><span class="kv-key">保留</span><span>保留原件负责人与内容历史（原位置不留副本）</span></div>
+              </div>
+            </article>
+
+            <article class="transfer">
+              <div class="transfer-head"><h4>复制内容（对照）</h4><span class="pill pill-ok">原件保持不变</span></div>
+              <div class="route-box" role="group" aria-label="复制保留原件，在新位置生成独立副本，可保存个人副本">
+                <div class="route-row">
+                  <span class="route-node">原件保留</span>
+                  <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
+                  <span class="route-node is-p">新位置独立副本</span>
+                </div>
+                <div class="route-banner is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>可保存个人副本 · 组织原件不受影响</span></div>
+              </div>
+              <div class="kv-list">
+                <div class="kv-row"><span class="kv-key">前提</span><span>查看并下载全部源内容 ＋ 编辑目标目录</span></div>
+                <div class="kv-row"><span class="kv-key">权限</span><span>副本按继承模式跟随目标权限</span></div>
+                <div class="kv-row"><span class="kv-key">归属</span><span>副本由复制人创建并负责</span></div>
+              </div>
+            </article>
           </div>
         </div>
         <div class="consistency"><b>同一套权限</b><span>列表 / 搜索</span><span>分享 / 协作</span><span>下载 / 恢复</span><span>问 AI 的知识与引用</span></div>
