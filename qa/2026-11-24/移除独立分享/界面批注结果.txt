@@ -1,0 +1,12 @@
+命令：
+node --test --test-timeout 30000 src/kb/uxNotes.test.mjs src/kb/shareRemoval.test.mjs src/kb/accessDialogRevision.test.mjs src/kb/fileActions.test.mjs src/kb/refinements.test.mjs src/kb/interactionReview.test.mjs src/kb/permissionModel.test.mjs src/kb/collaboratorRules.test.mjs
+
+结果：74 通过 / 0 失败 / 0 跳过。
+完整输出：qa/2026-11-24/移除独立分享/界面批注回归.log（*.log 被 gitignore，不进入提交）。
+
+覆盖：个人库/共享库/广场封面不再出现「你可访问 N 项内容」；库内身份控件标注为「原型演示 · 切换身份」且能从周宁切到林夏；「项目复盘资料」菜单为「在此文件夹新建」「上传到此文件夹」，选择文件夹后进入 folder-retro 并出现新文件夹名称；主页按钮为「新建」，选项为文档/表格/幻灯片/文件夹，旁边「上传文件」「新建知识库」仍在；已挂载页面不出现分享入口。
+
+浏览器自测截图：/opt/cursor/artifacts/ux-notes/
+01-personal-cover.png 02-identity-demo.png 03-folder-menu.png 03b-folder-draft.png 04-home-new.png
+
+这是制作方自测，不是独立验收。
