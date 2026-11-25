@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BookBookmark, PushPin, Gear, MagnifyingGlass, CaretRight, FolderOpen, Briefcase, Lightbulb, Archive, UserCircle, UploadSimple, DotsThree } from '@phosphor-icons/react';
 import { CreateMenu, ContentIcon } from './CreationFlow.jsx';
 import { contentLabel, contentText, writableLibraries } from './contentCreation.js';
-import { VIEW_LABELS, activeNode, actualNodes, libraryRights, librariesForView, libraryStats, projectedEntries, validView, safeFolderTrail, deleteContent, libraryType, LIBRARY_TYPES } from './access.js';
+import { VIEW_LABELS, activeNode, actualNodes, libraryRights, librariesForView, libraryStats, projectedEntries, validView, safeFolderTrail, deleteContent } from './access.js';
 import { can, loadState, memberName, nodeRole, spaceRole } from './store.js';
 import InlineFolder from './InlineFolder.jsx';
 import { LibraryIcon } from './libraryIcons.jsx';
@@ -17,7 +17,6 @@ import './overlays.css';
 import { pinnedRecords, togglePin, visitContent } from './personalization.js';
 import { LIBRARY_CATEGORY_FILTERS, filterLibrariesByCategory, librariesInList, libraryCategoryNames } from './libraryCategories.js';
 import FileMenu from './FileMenu.jsx';
-import { handoverReason } from './handover.js';
 import { NameForm } from './ActionDialogs.jsx';
 import { navigateFolder } from './folderNavigation.js';
 import { batchPreflight } from './fileActions.js';
@@ -41,7 +40,7 @@ function LibraryCoverEditor({space,userId,update,say}){
         if(current.viewAs!==userId)throw Error('当前用户已变化，请重新操作');
         const latest=current.spaces.find(item=>item.id===space.id);
         if(!latest||latest.deletedAt)throw Error('知识库已不可用');
-        if(responsibleId(latest)!==userId)throw Error('只有该知识库的负责人可以修改背景');
+        if(responsibleId(latest)!==userId)throw Error('只有该知识库的所有者可以修改背景');
         return {...current,spaces:current.spaces.map(item=>item.id===space.id?{...item,cover:persisted.cover,updatedAt:new Date().toISOString()}:item)};
       });
       say('已更新知识库背景');
@@ -86,7 +85,7 @@ export function LibraryPage({state,userId,section,startCreate,startUpload,onCrea
       {!visible.length&&<Empty title={empty.title} body={empty.body}/>}</section></>;
 }
 
-export function SpaceDetail({state,userId,space,folderPath:requestedPath,detailAiOpen,setDetailAiOpen,openSettings,onHandover,onAction,onBatch,locateId,origin,startCreate,startUpload,folderDraft,onCloseFolder,onFolderCreated,openDoc,say,update}){
+export function SpaceDetail({state,userId,space,folderPath:requestedPath,detailAiOpen,setDetailAiOpen,openSettings,onAction,onBatch,locateId,origin,startCreate,startUpload,folderDraft,onCloseFolder,onFolderCreated,openDoc,say,update}){
   const [search,setSearch]=useState(''),[selected,setSelected]=useState([]),[renameId,setRenameId]=useState(''),allBox=useRef(null);
   const [expanded,setExpanded]=useState([]);
   const role=spaceRole(state,space,userId),view=validView(state,space,userId,origin);
@@ -116,13 +115,13 @@ export function SpaceDetail({state,userId,space,folderPath:requestedPath,detailA
   const batchReason=action=>{try{batchPreflight(state,{ids:picked,spaceId:space.id,action},userId);return '';}catch(e){return e.message;}};
   const rowAction=(action,node,options)=>{if(action==='rename')setRenameId(node.id);else onAction(action,node,options);};
   const changeSort=value=>{try{update(current=>{if(current.viewAs!==userId||!librariesForView(current,userId).some(item=>item.id===space.id))throw Error('当前知识库已不可访问');return {...current,directorySortByUser:{...current.directorySortByUser,[userId]:{...current.directorySortByUser?.[userId],[space.id]:value}}};});}catch(error){say(error.message);}};
-  return <div className={`knowledge-library-detail ${tone}`}><header className="knowledge-detail-toolbar"><button type="button" onClick={()=>go(`/${view}`)}><CaretRight size={17}/><span>{titles[view]}</span></button><div><label className="kb-inline-identity">原型演示 · 切换身份<select aria-label="原型演示 · 切换身份" value={userId} onChange={e=>update(s=>({...s,viewAs:e.target.value}))}>{state.members.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label><button type="button" disabled={!role.manage} title={!role.manage?'需要管理权限':undefined} onClick={()=>openSettings(space)}><Gear size={17}/>设置</button>{libraryType(space)!=='personal'&&onHandover&&<FileMenu state={state} node={space} userId={userId} menuItems={[{action:'handover',label:'交接负责人',reason:handoverReason(state,space.id,'space',userId)}]} onAction={(action,target)=>{if(action==='handover')onHandover(target,'space');}}/>}</div></header>
-    <section className={`knowledge-detail-hero${space.cover&&space.cover.key!=='original'?' has-library-cover':''}${responsibleId(space)===userId?' can-edit-cover':''}`}><LibraryCoverSurface cover={space.cover} className="library-detail-hero-cover"/><span className="knowledge-detail-icon"><LibraryIcon library={space} size={54}/></span><div><h1 title={space.name}>{space.name}</h1><p title={space.description||''}>{space.description}</p><small className="library-manager-line"><UserCircle size={16}/>负责人：{memberName(state,responsibleId(space))}</small></div>{responsibleId(space)===userId&&<LibraryCoverEditor space={space} userId={userId} update={update} say={say}/>}</section>
+  return <div className={`knowledge-library-detail ${tone}`}><header className="knowledge-detail-toolbar"><button type="button" onClick={()=>go(`/${view}`)}><CaretRight size={17}/><span>{titles[view]}</span></button><div><label className="kb-inline-identity">原型演示 · 切换身份<select aria-label="原型演示 · 切换身份" value={userId} onChange={e=>update(s=>({...s,viewAs:e.target.value}))}>{state.members.map(m=><option key={m.id} value={m.id}>{m.name}</option>)}</select></label><button type="button" disabled={!role.manage} title={!role.manage?'需要管理权限':undefined} onClick={()=>openSettings(space)}><Gear size={17}/>设置</button></div></header>
+    <section className={`knowledge-detail-hero${space.cover&&space.cover.key!=='original'?' has-library-cover':''}${responsibleId(space)===userId?' can-edit-cover':''}`}><LibraryCoverSurface cover={space.cover} className="library-detail-hero-cover"/><span className="knowledge-detail-icon"><LibraryIcon library={space} size={54}/></span><div><h1 title={space.name}>{space.name}</h1><p title={space.description||''}>{space.description}</p><small className="library-manager-line"><UserCircle size={16}/>所有者：{memberName(state,responsibleId(space))}</small></div>{responsibleId(space)===userId&&<LibraryCoverEditor space={space} userId={userId} update={update} say={say}/>}</section>
     <div className="knowledge-detail-list-toolbar"><nav className="knowledge-detail-breadcrumb" aria-label="文件夹路径"><button className={!folderPath.length?'current':''} type="button" onClick={()=>changeFolder([])}>全部</button>{folderPath.map((id,i)=><span key={id}><CaretRight size={16}/><button title={state.nodes.find(n=>n.id===id)?.name} className={i===folderPath.length-1?'current':''} type="button" onClick={()=>changeFolder(folderPath.slice(0,i+1))}>{state.nodes.find(n=>n.id===id)?.name}</button></span>)}</nav><div><label><MagnifyingGlass size={16}/><input aria-label="搜索当前目录" value={search} onChange={e=>setSearch(e.target.value)} placeholder="搜索当前文件夹"/></label>{canCreateHere&&<UploadMenu onChoose={kind=>startUpload({parentId:folderId,kind})}/>}<CreateMenu disabled={!canCreateHere} reason={folderIsPath?'此目录仅用于路径导航':'需要当前位置的编辑权限'} onChoose={format=>startCreate(format,{view,lockedSpaceId:space.id,spaceId:space.id,parentId:folderId})}/><DirectorySortMenu value={sort} onChange={changeSort}/></div></div>
     {picked.length>0&&<div className="batch-toolbar" role="toolbar" aria-label="批量操作"><span>{selectionSummary(state,picked)}</span>{[['move','移动'],['copy','复制'],['delete','删除'],['download','下载']].map(([action,label])=>{const reason=batchReason(action);return <button key={action} type="button" disabled={!!reason} title={reason||`批量${label}`} onClick={()=>onBatch(action,picked,space.id,()=>setSelected([]))}>{label}</button>;})}<button type="button" onClick={()=>setSelected([])}>取消选择</button></div>}
     {folderDraft?.spaceId===space.id&&folderDraft.parentId===folderId&&<InlineFolder key={folderDraft.token} state={state} userId={userId} context={folderDraft} update={update} onClose={onCloseFolder} onCreated={onFolderCreated}/>}
     <div className={`knowledge-detail-table selectable expandable-file-table ${picked.length?'selection-mode':''}`} style={{'--file-tree-extra':`${Math.min(Math.max(0,...entries.map(row=>row.depth))*16,96)}px`}}>
-      <div className="knowledge-detail-row head"><label className="row-checkbox"><input ref={allBox} type="checkbox" aria-label="全选当前筛选结果" checked={all} disabled={!selectable.length} onChange={()=>setSelected(all?[]:treeRoots(state,selectable))}/></label><span>名称</span><span>负责人</span><span>更新时间</span><span>类型</span><span aria-hidden="true"/></div>
+      <div className="knowledge-detail-row head"><label className="row-checkbox"><input ref={allBox} type="checkbox" aria-label="全选当前筛选结果" checked={all} disabled={!selectable.length} onChange={()=>setSelected(all?[]:treeRoots(state,selectable))}/></label><span>名称</span><span>所有者</span><span>更新时间</span><span>类型</span><span aria-hidden="true"/></div>
       {entries.map(row=>{
         if(row.empty)return <div className="directory-tree-empty" key={`empty-${row.id}`} style={{'--tree-depth':row.depth}}>{row.pathOnly?'暂无可访问内容':'此文件夹为空'}</div>;
         const {node,depth}=row,isFolder=node.type==='folder',isExpanded=isFolder&&expanded.includes(node.id)&&!search.trim();

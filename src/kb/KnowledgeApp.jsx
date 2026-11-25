@@ -37,6 +37,7 @@ import { RenameDialog, FileInformation, DownloadDialog, PrintDialog, ConfirmActi
 import BatchRelocateDialog from './BatchRelocateDialog.jsx';
 import RestoreLocationDialog from './RestoreLocationDialog.jsx';
 import { deleteLibrary, restoreLibrary, permanentlyDeleteLibrary, libraryDeletionSnapshot } from './libraryLifecycle.js';
+import { matchesRecycleQuery, recycleLibraryHaystack, recycleLibraryLocation, recycleNodeHaystack, recycleNodeLocation } from './recycleSearch.js';
 import { VIEW_LABELS, activeNode, actualNodes, contentRights, libraryRights, librariesForView, libraryStats, projectedEntries, spaceAccess, validView, safeFolderTrail, deleteContent, restoreContent, contentTree, libraryType, LIBRARY_TYPES, restoreNeedsLocation } from "./access.js";
 import CreationDialog, { CreateMenu, ContentIcon, launchDocument } from "./CreationFlow.jsx";
 import { UploadDialog, UploadQueue, UploadMenu } from "./UploadFlow.jsx";
@@ -266,7 +267,7 @@ export function KnowledgeApp() {
     }catch(error){setActionContext(current=>({...current,error:error.message}));}
   };
   const accessDialog=accessTarget&&<AccessDialog state={state} userId={userId} item={(accessTarget.entity==='space'?state.spaces:state.nodes).find(n=>n.id===accessTarget.id)} entity={accessTarget.entity} settings={accessTarget.mode==='settings'} onDelete={requestLibraryDelete} onHandover={openHandover} update={update} onClose={()=>setAccessTarget(null)} onSaved={()=>{say(accessTarget.mode==='settings'?'知识库设置已保存':'权限已保存');if(accessTarget.entity==='space'&&location.path==='space'){const latest=loadState();if(!librariesForView(latest,userId,location.view).some(s=>s.id===location.id)){const next=['personal','shared','plaza'].find(v=>librariesForView(latest,userId,v).some(s=>s.id===location.id));go(next?spaceUrl(location.id,next):'/home');}}}}/>;
-  const handoverDialog=handoverTarget&&<HandoverDialog state={state} userId={userId} {...handoverTarget} update={update} onClose={()=>setHandoverTarget(null)} onSaved={result=>{const {id,entity}=handoverTarget;setAccessTarget(null);setHandoverTarget(null);say(`已交接 ${result.changedCount} 项内容的负责人`);const target=result.state[entity==='space'?'spaces':'nodes'].find(row=>row.id===id),rights=entity==='space'?libraryRights(result.state,target,userId):contentRights(result.state,target,userId);if(!rights.view)go('/home');}}/>;
+  const handoverDialog=handoverTarget&&<HandoverDialog state={state} userId={userId} {...handoverTarget} update={update} onClose={()=>setHandoverTarget(null)} onSaved={result=>{const {id,entity}=handoverTarget;setAccessTarget(null);setHandoverTarget(null);say(`已转交 ${result.changedCount} 项内容的所有者`);const target=result.state[entity==='space'?'spaces':'nodes'].find(row=>row.id===id),rights=entity==='space'?libraryRights(result.state,target,userId):contentRights(result.state,target,userId);if(!rights.view)go('/home');}}/>;
   const actionDialogs=<>{accessDialog}{handoverDialog}
     {actionContext?.action==='delete-library'&&<ConfirmAction title={`删除知识库「${actionContext.name}」？`} body={`知识库及其中内容将移入回收站，原有单独删除的内容保持删除。删除后可在回收站恢复。未保存的设置不会生效。${actionContext.error?' '+actionContext.error:''}`} confirmText="删除" cancelText="取消" danger onClose={closeAction} onConfirm={confirmLibraryDelete}/>}
 
@@ -322,7 +323,7 @@ export function KnowledgeApp() {
         {location.path === "home" && <HomePage state={state} userId={userId} query={query} onOpen={openDoc} update={update} startUpload={startUpload} onCreateLibrary={()=>setLibraryDialog(true)} startCreate={startCreate} openRelocate={openRelocate} onAction={fileAction} />}
         {location.path === "ask" && <div className="ask-page-frame"><AskPage state={state} userId={userId} onOpen={openDoc} /><OverlayNotice storageKey={ASK_AI_OVERLAY_KEY} title="一期暂不开发" className="ask-ai-overlay"/></div>}
         {isLibrary && <LibraryPage state={state} userId={userId} section={section} startCreate={startCreate} startUpload={startUpload} onCreateLibrary={() => setLibraryDialog(true)} update={update} openSettings={openSettings} say={say} />}
-        {isDetail && <SpaceDetail onHandover={openHandover} state={state} userId={userId} space={space} query={query} folderPath={folderPath} menuFor={menuFor} setMenuFor={setMenuFor} detailAiOpen={detailAiOpen} setDetailAiOpen={setDetailAiOpen} openSettings={openSettings} onAction={fileAction} onBatch={batchAction} locateId={location.locate} origin={location.view} startCreate={startCreate} startUpload={startUpload} folderDraft={folderDraft} onCloseFolder={()=>setFolderDraft(null)} onFolderCreated={node=>say(`已创建文件夹「${node.name}」`)} openDoc={openDoc} openRelocate={openRelocate} say={say} setConfirm={setConfirm} update={update} />}
+        {isDetail && <SpaceDetail state={state} userId={userId} space={space} query={query} folderPath={folderPath} menuFor={menuFor} setMenuFor={setMenuFor} detailAiOpen={detailAiOpen} setDetailAiOpen={setDetailAiOpen} openSettings={openSettings} onAction={fileAction} onBatch={batchAction} locateId={location.locate} origin={location.view} startCreate={startCreate} startUpload={startUpload} folderDraft={folderDraft} onCloseFolder={()=>setFolderDraft(null)} onFolderCreated={node=>say(`已创建文件夹「${node.name}」`)} openDoc={openDoc} openRelocate={openRelocate} say={say} setConfirm={setConfirm} update={update} />}
         {location.path === "recycle" && <RecyclePage state={state} userId={userId} update={update} setConfirm={setConfirm} say={say} />}
       </div>
       {(isDetail||location.path==='home')&&drawerSpace&&<SpaceAiDrawer open={drawerVisible} key={`${userId}:${detailAiTarget?.id||drawerSpace.id}`} state={state} userId={userId} space={drawerSpace} targetId={detailAiTarget?.id} onOpen={openDoc} onClose={() => {setDetailAiOpen(false);requestAnimationFrame(()=>{const target=document.querySelector('[aria-controls="knowledge-context-ai-drawer"]')||(detailAiReturnFocus.current?.isConnected?detailAiReturnFocus.current:document.querySelector('.knowledge-home-header input'));if(target?.isConnected)target.focus();});}} />}
@@ -465,24 +466,30 @@ function AIComposer({ message, onMessageChange, submit, skills, setSkills, knowl
 }
 
 function RecyclePage({state,userId,update,setConfirm,say}){
-  const [error,setError]=useState(''),[restoring,setRestoring]=useState('');
-  useEffect(()=>{setRestoring('');setError('');},[userId]);
+  const [error,setError]=useState(''),[restoring,setRestoring]=useState(''),[search,setSearch]=useState('');
+  useEffect(()=>{setRestoring('');setError('');setSearch('');},[userId]);
   const deletedLibraries=state.spaces.filter(space=>space.deletedAt&&libraryRights(state,space,userId,true).manage);
   const deleted=state.nodes.filter(node=>!state.spaces.find(space=>space.id===node.spaceId)?.deletedAt&&node.deletedAt&&contentRights(state,node,userId,true).manage&&!state.nodes.some(p=>p.id===node.parentId&&p.spaceId===node.spaceId&&p.deletedAt&&p.deleteBatch&&p.deleteBatch===node.deleteBatch));
+  const query=search.trim();
+  const visibleLibraries=deletedLibraries.filter(library=>matchesRecycleQuery(recycleLibraryHaystack(state,library),query));
+  const visibleNodes=deleted.filter(node=>matchesRecycleQuery(recycleNodeHaystack(state,node),query));
   const run=(recipe,result)=>{try{update(current=>{if(current.viewAs!==userId)throw Error('当前用户已变化，请重新操作');return recipe(current);});setError('');if(result)say(result.text,result.target);}catch(err){setError(err.message);}};
   const restore=node=>{
     if(restoreNeedsLocation(state,node,userId)){setRestoring(node.id);return;}
     setConfirm({title:'恢复原内容',body:`将恢复到原位置，并按当前知识库规则和权限提供访问，不创建副本。`,action:()=>run(current=>restoreContent(current,node.id,userId),{text:'内容已恢复',target:{entity:'node',id:node.id}})});
   };
   const selected=state.nodes.find(n=>n.id===restoring&&n.deletedAt);
-  return <><header className="knowledge-header"><div><h1>回收站</h1></div></header>{error&&<p className="access-error" role="alert">{error}</p>}
-    {!deleted.length&&!deletedLibraries.length&&<Empty title="回收站是空的" body="删除内容后会出现在这里。"/>}
-    {(!!deleted.length||!!deletedLibraries.length)&&<div className="knowledge-document-table recycle-table"><div className="knowledge-document-row recycle-row head"><span>名称 / 原位置</span><span>删除时间</span><span>历史创建人</span><span className="recycle-actions-heading">操作</span></div>{deletedLibraries.map(library=><div className="knowledge-document-row recycle-row" data-recycled-library={library.id} key={library.id}>
-      <div className="recycle-item-main"><Books size={23} className="recycle-item-icon"/><div className="recycle-item-copy"><div className="recycle-name-line"><strong title={library.name}>{library.name}</strong></div><div className="recycle-location" title={`${LIBRARY_TYPES[libraryType(library)]} / ${library.name}`}>原位置：{LIBRARY_TYPES[libraryType(library)]} / {library.name}</div></div></div>
+  const isEmpty=!deleted.length&&!deletedLibraries.length;
+  const noMatches=!isEmpty&&!visibleLibraries.length&&!visibleNodes.length;
+  return <><header className="knowledge-header"><div><h1>回收站</h1></div><label><MagnifyingGlass size={17}/><input aria-label="搜索回收站" placeholder="搜索回收站" value={search} onChange={e=>setSearch(e.target.value)}/></label></header>{error&&<p className="access-error" role="alert">{error}</p>}
+    {isEmpty&&<Empty title="回收站是空的" body="删除内容后会出现在这里。"/>}
+    {noMatches&&<Empty title="没有找到相关内容" body="请调整关键词，搜索仅覆盖回收站内已删除的内容。"/>}
+    {!isEmpty&&!noMatches&&<div className="knowledge-document-table recycle-table"><div className="knowledge-document-row recycle-row head"><span>名称 / 原位置</span><span>删除时间</span><span>历史创建人</span><span className="recycle-actions-heading">操作</span></div>{visibleLibraries.map(library=><div className="knowledge-document-row recycle-row" data-recycled-library={library.id} key={library.id}>
+      <div className="recycle-item-main"><Books size={23} className="recycle-item-icon"/><div className="recycle-item-copy"><div className="recycle-name-line"><strong title={library.name}>{library.name}</strong></div><div className="recycle-location" title={`原位置：${recycleLibraryLocation(library)}`}>原位置：{recycleLibraryLocation(library)}</div></div></div>
       <span className="recycle-time">{formatTime(library.deletedAt)}</span><span className="recycle-creator" title={memberName(state,creatorId(library))}>{memberName(state,creatorId(library))}</span>
       <div className="recycle-row-actions"><button className="recycle-icon-action" type="button" aria-label="恢复" title="恢复" onClick={()=>setConfirm({title:'恢复知识库',body:'恢复知识库及本次一起删除的内容。原来单独删除的内容仍保留在回收站，权限按恢复时的组织授权生效。',action:()=>run(current=>restoreLibrary(current,library.id,userId),{text:'知识库已恢复',target:{entity:'space',id:library.id}})})}><ArrowCounterClockwise size={17}/></button><button className="recycle-icon-action recycle-delete" type="button" aria-label="删除" title="删除" onClick={()=>setConfirm({title:'彻底删除知识库',body:'知识库及其中全部内容将永久删除，无法恢复。其他位置的独立副本保留。',action:()=>run(current=>permanentlyDeleteLibrary(current,library.id,userId))})}><Trash size={17}/></button></div>
-    </div>)}{deleted.map(node=>{
-      const library=state.spaces.find(s=>s.id===node.spaceId),position=node.originalLocation||[library?.name,...folderTrail(state,node.parentId).map(id=>state.nodes.find(n=>n.id===id)?.name),node.name].filter(Boolean).join(' / ');
+    </div>)}{visibleNodes.map(node=>{
+      const position=recycleNodeLocation(state,node);
       return <div className="knowledge-document-row recycle-row" key={node.id}>
         <div className="recycle-item-main"><ContentIcon node={node}/><div className="recycle-item-copy"><div className="recycle-name-line"><strong title={node.name}>{node.name}</strong></div><div className="recycle-location" title={`原位置：${position}`}>原位置：{position}</div></div></div>
         <span className="recycle-time">{formatTime(node.deletedAt)}</span><span className="recycle-creator" title={memberName(state,creatorId(node))}>{memberName(state,creatorId(node))}</span>
@@ -637,7 +644,7 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
           {!aiOpen && <button className="document-ai-open-button" type="button" aria-label="打开 AI 面板" onClick={() => setAiOpen(true)}><Sparkle size={22} weight="fill" /></button>}
           <article ref={bodyElement} className="document-sheet" onMouseUp={captureSelection}>
             <h1>{node.name}</h1>
-            <div id="doc-permissions" className="document-meta"><UserCircle size={18} />{memberName(state, responsibleId(node))} · {responsibleId(node) === userId ? "负责人" : roleLabel(role)}<span /><Clock size={18} />{formatTime(node.updatedAt)}{node.permissionMode==='custom'?" · 自定义权限":" · 继承权限"}</div>
+            <div id="doc-permissions" className="document-meta"><UserCircle size={18} />{memberName(state, responsibleId(node))} · {responsibleId(node) === userId ? "所有者" : roleLabel(role)}<span /><Clock size={18} />{formatTime(node.updatedAt)}{node.permissionMode==='custom'?" · 自定义权限":" · 继承权限"}</div>
             {node.format==='file'?<div id="doc-body"><UploadedFilePreview key={node.id} node={node} canDownload={role.download}/></div>:['sheet','slides'].includes(node.format)?<div id="doc-body"><SimpleContentEditor key={node.id} format={node.format} value={editing?draft:node.body} editing={editing} onChange={setDraft} activeIndex={activeSlide} onActiveChange={setActiveSlide}/></div>:<><section className="document-summary" id="doc-summary"><h2>{node.faq?'标准问答':'文档摘要'}</h2><p>{paragraphs[0]||'这篇文档还没有正文。'}</p></section><div id="doc-body">{editing?<textarea className="kb-body" aria-label="文档正文" value={draft} onChange={event=>setDraft(event.target.value)} placeholder="开始撰写正文…"/>:sections.map(section=><section className="document-report-section" id={section.id} key={section.id}>{section.heading?<h2>{section.heading}</h2>:<p>{section.text}</p>}</section>)}</div></>}
 
           </article>

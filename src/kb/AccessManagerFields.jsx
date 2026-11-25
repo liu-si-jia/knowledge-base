@@ -57,6 +57,7 @@ export function ModeSwitchConfirm({nextMode,onCancel,onConfirm}){
 export default function AccessManagerFields({
   state,userId,local,inherited,floor=[],ownerIds=[],protectedRows,onChange,personal=false,
   mode,onModeChange,allowModeSwitch=false,showResponsibility=true,showFloorNotice=true,
+  onTransferOwner,transferReason='',allowTransfer=false,
 }){
   const currentMode=allowModeSwitch?(mode||'inherit'):'custom';
   const inheritLocked=currentMode==='inherit';
@@ -64,7 +65,7 @@ export default function AccessManagerFields({
   const localSubjects=local?.subjects||[];
   const inheritedKeys=new Set(inheritedSubjects.map(subjectKey));
   const localKeys=new Set(localSubjects.map(subjectKey));
-  const protections=protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['负责人']}));
+  const protections=protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['知识库所有者']}));
   const ownerSet=new Set(protections.map(row=>row.id));
   const floorKey=floor.length?subjectKey(floor[0]):'';
   const collaborators=(inheritLocked?inheritedSubjects:localSubjects)
@@ -96,18 +97,6 @@ export default function AccessManagerFields({
 
   return <div className="grant-fields access-manager-fields">
     {showFloorNotice&&<GrantNotices state={state} showOwners={false} floor={floor}/>}
-    {showResponsibility&&!!protections.length&&<div className="grant-responsibility" aria-label="负责人">
-      {protections.map(row=>{
-        const subject={type:'person',id:row.id},name=subjectLabel(state,subject);
-        return <div className="grant-row is-owner" key={`owner:${row.id}`}>
-          <SubjectAvatar state={state} subject={subject}/>
-          <div className="grant-subject">
-            <b>{name}{row.sources.map(source=><span className="grant-owner-tag" key={source}>{source}</span>)}</b>
-          </div>
-          <span className="grant-fixed-role">可管理</span>
-        </div>;
-      })}
-    </div>}
     {allowModeSwitch&&<div className="grant-mode-bar">
       <div className="grant-mode-status"><span>当前</span><strong>{inheritLocked?'继承权限':'自定义权限'}</strong></div>
       <button type="button" className="grant-mode-switch" onClick={()=>setModePrompt(inheritLocked?'custom':'inherit')}>{inheritLocked?'转为自定义':'改回继承'}</button>
@@ -121,6 +110,19 @@ export default function AccessManagerFields({
       {someSelected&&<BatchRolePicker label="批量修改权限" rows={batchRows} mode={currentMode} onChange={changeBatch}/>}
     </div>}
     <div className="grant-list">
+      {showResponsibility&&protections.map(row=>{
+        const subject={type:'person',id:row.id},name=subjectLabel(state,subject);
+        return <div className="grant-row is-owner" key={`owner:${row.id}`}>
+          <SubjectAvatar state={state} subject={subject}/>
+          <div className="grant-subject">
+            <b>{name}{row.sources.map(source=><span className="grant-owner-tag" key={source}>{source}</span>)}</b>
+          </div>
+          <div className="grant-owner-actions">
+            {allowTransfer&&<button type="button" className="grant-handover" disabled={!!transferReason} title={transferReason||'转交所有者'} aria-label={`转交所有者 ${name}`} onClick={()=>onTransferOwner?.(row)}>{'转交所有者'}</button>}
+            <span className="grant-fixed-role">可管理</span>
+          </div>
+        </div>;
+      })}
       {collaborators.map(subject=>{
         const key=subjectKey(subject),kind=inheritLocked?'inherited':classifyCollaborator(key,localKeys,inheritedKeys),name=subjectLabel(state,subject);
         const caption=collaboratorCaption(state,subject,{mode:currentMode});
@@ -132,7 +134,7 @@ export default function AccessManagerFields({
           {inheritLocked?<span className="grant-fixed-role">{permissionLabel(subject.role)}</span>:<CollaboratorRolePicker label={`${name}的权限`} kind={kind} mode={currentMode} role={subject.role} inheritedRole={parent?.role} effectiveRole={explanation.effectiveRole} allowRemove={!inheritLocked} onChange={role=>changeRow(subject,role)}/>}
         </div>;
       })}
-      {!collaborators.length&&<p className="grant-empty">{inheritLocked?'当前没有从父级继承的普通权限':'尚未添加其他授权对象'}</p>}
+      {!collaborators.length&&!personal&&<p className="grant-empty">{inheritLocked?'当前没有从父级继承的普通权限':'尚未添加其他授权对象'}</p>}
     </div>
     {picker&&!inheritLocked&&<SubjectPicker title="选择协作者" state={state} ownerIds={[...ownerSet]} blocked={existingForPicker} selected={[]} onClose={()=>setPicker(false)} onConfirm={chosen=>{
       const additions=prepareAddedCollaborators(chosen,userId,existingForPicker).map(s=>({...s,role:DEFAULT_ADD_ROLE,addedBy:undefined}));

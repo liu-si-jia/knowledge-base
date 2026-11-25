@@ -32,7 +32,7 @@ export function FileInformation({state,node,userId=state.viewAs,onClose}){
   useEffect(()=>{if(!allowed)onClose();},[allowed,onClose]);
   // Do not render even one stale metadata frame while the close effect runs.
   if(!allowed)return null;
-  const fields=[['名称',current.name],['类型',contentLabel(current)],['位置',locationLabel(state,current.spaceId,current.parentId)],['负责人',memberName(state,responsibleId(current))],['创建时间',current.createdAt?new Date(current.createdAt).toLocaleString('zh-CN'):'—'],['更新时间',current.updatedAt?new Date(current.updatedAt).toLocaleString('zh-CN'):'—'],...(current.type!=='folder'&&current.format==='file'?[['大小',`${((current.size??0)/1024).toFixed(1)} KB`]]:[])];
+  const fields=[['名称',current.name],['类型',contentLabel(current)],['位置',locationLabel(state,current.spaceId,current.parentId)],['所有者',memberName(state,responsibleId(current))],['创建时间',current.createdAt?new Date(current.createdAt).toLocaleString('zh-CN'):'—'],['更新时间',current.updatedAt?new Date(current.updatedAt).toLocaleString('zh-CN'):'—'],...(current.type!=='folder'&&current.format==='file'?[['大小',`${((current.size??0)/1024).toFixed(1)} KB`]]:[])];
   return <div className="action-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)onClose();}}><section ref={root} className="action-dialog" role="dialog" aria-modal="true" aria-label="详情"><header><h2>详情</h2><button type="button" aria-label="关闭详情" onClick={onClose}><X size={18}/></button></header><dl>{fields.map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl></section></div>;
 }
 export function DownloadDialog({state,ids,spaceId,userId,onClose,onSuccess}){

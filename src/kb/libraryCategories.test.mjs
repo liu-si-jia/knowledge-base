@@ -260,7 +260,10 @@ test.describe('知识库分类界面', { timeout: 180000 }, () => {
     const dialog = document.querySelector('[aria-label="知识库设置"]');
     assert.deepEqual([...dialog.querySelectorAll('.library-category-options span')].map(item => item.textContent), ['制度规范', '项目资料', '培训学习']);
     assert.equal([...dialog.querySelectorAll('.library-category-options input')].map(input => input.checked).join(','), 'false,true,false');
-    assert.equal(dialog.textContent.includes('未分类'), true);
+    assert.equal(dialog.textContent.includes('可多选，也可不选'), false);
+    assert.equal(dialog.textContent.includes('知识库类型：'), false);
+    assert.equal(dialog.textContent.includes('历史创建人'), false);
+    assert.equal(dialog.textContent.includes('未分类'), false);
     assert.equal([...dialog.querySelectorAll('input')].some(input => input.type === 'checkbox' && input.nextElementSibling?.textContent === '未分类'), false);
     assert.equal([...dialog.querySelectorAll('input,textarea')].some(input => /分类/.test(input.getAttribute('placeholder') || '') || input.getAttribute('aria-label') === '新建分类'), false);
     await click(api, [...dialog.querySelectorAll('.library-category-options input')].find(input => input.value === 'training'));
@@ -290,7 +293,7 @@ test.describe('知识库分类界面', { timeout: 180000 }, () => {
     const detail = api.dom.window.document.querySelector('.knowledge-library-detail');
     assert.equal(detail.querySelector('.library-category-filter'), null);
     assert.equal(detail.querySelector('.library-card-categories'), null);
-    assert.equal([...detail.querySelectorAll('.knowledge-detail-row.head span')].map(item => item.textContent).filter(Boolean).join(','), '名称,负责人,更新时间,类型');
+    assert.equal([...detail.querySelectorAll('.knowledge-detail-row.head span')].map(item => item.textContent).filter(Boolean).join(','), '名称,所有者,更新时间,类型');
     assert.equal(detail.textContent.includes('项目复盘资料'), true);
     assert.equal(detail.textContent.includes('制度规范'), false);
     const librarySettings = [...detail.querySelectorAll('.knowledge-detail-toolbar button')].find(button => button.textContent.includes('设置'));

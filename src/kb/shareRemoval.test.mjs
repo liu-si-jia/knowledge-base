@@ -247,7 +247,7 @@ test.describe('已渲染界面不能打开独立分享，权限管理与导航�
     const dialog = document.querySelector('[role="dialog"][aria-label="权限管理"]');
     assert.ok(dialog);
     assert.equal(document.querySelector('[role="dialog"][aria-label="分享"]'), null);
-    assert.match(dialog.textContent, /负责人/);
+    assert.match(dialog.textContent, /所有者/);
     assert.equal(dialog.querySelector('.grant-add'), null);
 
     await click(api, textButton(dialog, '转为自定义'));

@@ -10,25 +10,26 @@ import './grants.css';
 import PermissionRolePicker, { permissionRoleOptions } from './PermissionRolePicker.jsx';
 
 const icons={company:Buildings,department:UsersThree,person:UserCircle};
-export const ownerPermissionNotice=name=>`负责人：${name}，拥有全部权限`;
+export const ownerPermissionNotice=name=>`所有者：${name}，拥有全部权限`;
 export const plazaPermissionNotice=orgName=>`全员查看：${orgName}，公司成员默认可查看`;
 export function GrantNotices({state,ownerIds=[],protectedRows,floor=[],showOwners=true}){
-  const protections=showOwners?(protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['负责人']}))):[];
+  const protections=showOwners?(protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['知识库所有者']}))):[];
   if(!protections.length&&!floor.length)return null;
   return <div className="grant-notices">
-    {protections.map(row=><p className="grant-notice" key={row.id}>{ownerPermissionNotice(state.members.find(m=>m.id===row.id)?.name||'负责人')}</p>)}
+    {protections.map(row=><p className="grant-notice" key={row.id}>{ownerPermissionNotice(state.members.find(m=>m.id===row.id)?.name||'所有者')}</p>)}
     {floor[0]&&<p className="grant-notice">{plazaPermissionNotice(subjectLabel(state,floor[0]))}</p>}
   </div>;
 }
 export function GrantFields({state,value,onChange,ownerIds=[],protectedRows,floor=[],allowAdd=true,defaultRole='viewer',blocked=[],showOwners=true,heading='权限配置',explanationContext={}}){
   const [picker,setPicker]=useState(false),draft=toSubjectAccess(state,value,ownerIds),rows=mergeSubjects(draft.subjects,floor),floorKey=floor.length?subjectKey(floor[0]):'';
   const change=subjects=>onChange(accessFromSubjects(state,subjects.filter(s=>subjectKey(s)!==floorKey||s.role!=='viewer')));
-  const protections=protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['负责人']}));
+  const protections=protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['知识库所有者']}));
   const visibleRows=rows.filter(s=>subjectKey(s)!==floorKey||s.role!=='viewer');
   return <div className="grant-fields">
-    <GrantNotices state={state} ownerIds={ownerIds} protectedRows={protections} floor={floor} showOwners={showOwners}/>
+    <GrantNotices state={state} ownerIds={ownerIds} protectedRows={protections} floor={floor} showOwners={false}/>
     <div className="grant-heading"><span>{heading}</span>{allowAdd&&<button type="button" className="grant-add" onClick={()=>setPicker(true)}><Plus size={14}/>添加授权对象</button>}</div>
     <div className="grant-list">
+      {showOwners&&protections.map(row=>{const subject={type:'person',id:row.id},label=subjectLabel(state,subject),Icon=icons.person;return <div className="grant-row is-owner" key={`owner:${row.id}`}><Icon size={22}/><div className="grant-subject"><b>{label}{row.sources.map(source=><span className="grant-owner-tag" key={source}>{source}</span>)}</b></div><span className="grant-fixed-role">可管理</span></div>;})}
       {visibleRows.map(s=>{const Icon=icons[s.type],label=subjectLabel(state,s),fixed=subjectKey(s)===floorKey,actions=fixed?(s.role==='viewer'?[]:[{value:'remove',label:'撤销额外公司授权',description:'撤销后，公司全员仍可查看'}]):undefined;const explanation=explainPermission(state,s,{local:mergeSubjects(explanationContext.local||[],draft.subjects),inherited:explanationContext.inherited||[],excluded:explanationContext.excluded||[],floor,protectedRows:protections,sourceLabel:explanationContext.sourceLabel||'父级'});return <div className="grant-row" key={subjectKey(s)}><Icon size={22}/><div className="grant-subject"><b>{label}</b>{fixed&&<small>额外公司授权</small>}<PermissionSourceDetails explanation={explanation} localRole={draft.subjects.find(subject=>subjectKey(subject)===subjectKey(s))?.role}/></div><PermissionRolePicker label={`${label}的权限`} value={s.role} displayValue={explanation.effectiveRole} options={permissionRoleOptions(s.role,actions)} onChange={role=>change(role==='remove'?rows.filter(row=>subjectKey(row)!==subjectKey(s)):rows.map(row=>subjectKey(row)===subjectKey(s)?{type:s.type,id:s.id,role}:row))}/></div>;})}
       {allowAdd&&!visibleRows.length&&<p className="grant-empty">尚未添加其他授权对象</p>}
     </div>
@@ -45,7 +46,7 @@ export function SubjectPicker({state,selected,ownerIds,blocked=[],onClose,onConf
   const expand=id=>setExpanded(current=>{const next=new Set(current);next.has(id)?next.delete(id):next.add(id);return next;});
   const personMatch=m=>!keyword||`${m.name} ${m.staffId||''}`.toLocaleLowerCase().includes(keyword);
   const departmentMatch=d=>!keyword||d.name.toLocaleLowerCase().includes(keyword)||state.members.some(m=>departmentContains(state,d.id,m.deptId)&&personMatch(m))||state.departments.some(child=>departmentContains(state,d.id,child.id)&&child.name.toLocaleLowerCase().includes(keyword));
-  const subjectRow=(s,depth,{name,expandable=false,expanded:open=false,onExpand,protectedPerson=false}={})=>{const Icon=icons[s.type],already=blockedKeys.has(subjectKey(s));return <div className="subject-tree-row" style={{paddingLeft:depth*16}} key={subjectKey(s)}>{expandable?<button type="button" disabled={!!keyword} title={keyword?'搜索结果已展开':''} aria-label={`${open?'收起':'展开'} ${name}`} onClick={onExpand}><CaretRight size={12} className={open?'open':''}/></button>:<i/>}<label><input type="checkbox" aria-label={`选择${{company:'公司',department:'部门',person:'人员'}[s.type]} ${name}`} checked={selectedKeys.has(subjectKey(s))} disabled={protectedPerson||already||personOnly&&s.type!=='person'} title={personOnly&&s.type!=='person'?'负责人只能选择单个人员':undefined} onChange={()=>toggle(s)}/><Icon size={17}/><span title={name}>{name}</span>{protectedPerson?<small>负责人</small>:already&&<small>已添加</small>}</label></div>;};
+  const subjectRow=(s,depth,{name,expandable=false,expanded:open=false,onExpand,protectedPerson=false}={})=>{const Icon=icons[s.type],already=blockedKeys.has(subjectKey(s));return <div className="subject-tree-row" style={{paddingLeft:depth*16}} key={subjectKey(s)}>{expandable?<button type="button" disabled={!!keyword} title={keyword?'搜索结果已展开':''} aria-label={`${open?'收起':'展开'} ${name}`} onClick={onExpand}><CaretRight size={12} className={open?'open':''}/></button>:<i/>}<label><input type="checkbox" aria-label={`选择${{company:'公司',department:'部门',person:'人员'}[s.type]} ${name}`} checked={selectedKeys.has(subjectKey(s))} disabled={protectedPerson||already||personOnly&&s.type!=='person'} title={personOnly&&s.type!=='person'?'所有者只能选择单个人员':undefined} onChange={()=>toggle(s)}/><Icon size={17}/><span title={name}>{name}</span>{protectedPerson?<small>所有者</small>:already&&<small>已添加</small>}</label></div>;};
   const renderDepartment=(d,depth)=>{
     if(!departmentMatch(d))return null;
     const children=state.departments.filter(x=>x.parentId===d.id),people=state.members.filter(m=>m.deptId===d.id),open=!!keyword||expanded.has(d.id);

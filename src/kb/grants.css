@@ -120,3 +120,11 @@
 .subject-picker.permission-mode-confirm{width:min(480px,calc(100vw - 24px))}
 .permission-mode-confirm>p{margin:0 0 18px;font-size:13px;line-height:1.8;color:#526781}
 .permission-mode-confirm>footer{display:flex;justify-content:flex-end;gap:8px}
+
+.grant-owner-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0}
+.grant-handover{height:28px;padding:0 10px;border:1px solid #dce4ef;border-radius:6px;background:#fff;color:#3e6aa8;font-size:12px;white-space:nowrap;cursor:pointer}
+.grant-handover:hover{background:#f4f8fd;border-color:#bdd1ed}
+.grant-handover:disabled{opacity:.45;cursor:not-allowed}
+.grant-handover:focus-visible{outline:2px solid #3478f6;outline-offset:2px}
+.grant-list .grant-row.is-owner{background:#fbfcfe}
+.knowledge-product-dialog .library-category-field{margin-top:6px}

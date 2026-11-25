@@ -116,7 +116,7 @@ test('改回继承后自定义添加和修改全部失效并重新跟随父级',
 test('知识库负责人在下级不可移除或降权，自定义后也一样',()=>{
   let {s,doc}=setup();
   const header=displayedResponsibles(s,doc);
-  assert.ok(header.some(row=>row.id==='zhao-heng'&&row.sources.includes('知识库负责人')));
+  assert.ok(header.some(row=>row.id==='zhao-heng'&&row.sources.includes('知识库所有者')));
   assert.ok(!inheritedOrdinarySubjects(s,doc).some(row=>row.type==='person'&&row.id==='zhao-heng'));
   s=toCustom(s,doc.id,'lin-xia');
   assert.ok(!get(s,doc.id).localAccess.subjects.some(row=>row.id==='zhao-heng'));
@@ -150,7 +150,7 @@ test('同一人不重复出现在上方负责人区和权限列表',()=>{
   const merged=displayedResponsibles(s,get(s,folder.id));
   assert.equal(merged.length,1);
   assert.equal(merged[0].id,'zhao-heng');
-  assert.deepEqual(merged[0].sources,['知识库负责人','本项负责人']);
+  assert.deepEqual(merged[0].sources,['知识库所有者','本项所有者']);
   assert.ok(!inheritedOrdinarySubjects(s,get(s,folder.id)).some(row=>row.type==='person'&&row.id==='zhao-heng'));
   const spaceRows=displayedResponsibles(s,library,'space');
   assert.equal(spaceRows.length,1);
@@ -159,8 +159,8 @@ test('同一人不重复出现在上方负责人区和权限列表',()=>{
 
 test('继承来的可管理不能交接本项负责人，仅本项或知识库负责人可以',()=>{
   const {s,doc}=setup();
-  assert.match(handoverReason(s,doc.id,'node','zhou-ning'),/只有当前负责人或知识库负责人/);
-  assert.match(handoverReason(s,doc.id,'node','chen-ke'),/只有当前负责人或知识库负责人/);
+  assert.match(handoverReason(s,doc.id,'node','zhou-ning'),/只有当前所有者或知识库所有者/);
+  assert.match(handoverReason(s,doc.id,'node','chen-ke'),/只有当前所有者或知识库所有者/);
   assert.equal(handoverReason(s,doc.id,'node','lin-xia'),'');
   assert.equal(handoverReason(s,doc.id,'node','zhao-heng'),'');
 });

@@ -1,0 +1,46 @@
+回收站搜索、所有者改名、设置说明墙与权限列表 · 制作方功能回归
+日期：2026-11-25（Asia/Shanghai）
+性质：制作方自测，不是独立验收，不代表验收通过。请勿合并、不要发 Pages、不要操作云效。
+基线：c29813021b788f8c6205ce03718e07bd08a4ca90（GitHub main，知识库分类已合并）
+分支：local/recycle-search-owner-rename
+工作区：/workspace/kb-owner-recycle-20261125-8fe4edee
+性质说明：可点击原型，仅模拟数据。禁止使用 Cursor 云端 Agent，改动在盒子本地完成。
+
+命令与计数
+1. node --test src/kb/ownerRecycleSearch.test.mjs
+   结果：通过 5，失败 0。含回收站检索辅助函数、文案与介绍页断言，以及 jsdom 挂载后的 3 项界面用例。
+2. node --test src/kb/*.test.mjs
+   结果：通过 170，失败 0，取消 0，跳过 0。
+   相对基线新增 5 项，并回归既有权限、分类、交接规则、目录搜索、设置与分享移除用例。
+   汇总行：tests 170 / suites 4 / pass 170 / fail 0 / skipped 0。
+
+四项落地（制作方核对）
+1. 回收站增加搜索：提示「搜索回收站」，输入即时筛选，范围仅回收站内已删除内容（名称、原位置、历史创建人、正文/简介）。无结果空态为「没有找到相关内容 / 请调整关键词，搜索仅覆盖回收站内已删除的内容。」恢复与彻底删除规则未改。目录页「搜索当前文件夹」仍在，互不影响。
+2. 「负责人」改为「所有者」：库设置、权限管理、库封面、目录列、详情、主页列、转交弹窗与介绍页用户可见文案已统一。受保护身份进入权限/成员列表，只读，不可改级别或移除。所有者行右侧为「转交所有者」+「可管理」。资格规则保持现状：个人库不提供转交；仅本项或知识库所有者可转交；继承而来的可管理不能转交。
+   已去掉的外部转交入口：
+   - 文件/文件夹/文档「更多操作」菜单中的「交接负责人」
+   - 库封面/详情顶栏中的库级「交接负责人」菜单
+   转交仍从权限管理或知识库设置里的所有者行进入。未改数据模型字段名或权限计算（responsibleId 等内部字段保留）。
+3. 去掉设置与新建中面向研发的说明墙：分类下「可多选，也可不选…」已删；设置页不再展示「知识库类型：…」「历史创建人 / 当前负责人」说明；新建弹窗不再展示只读的「知识库类型：…」说明。分类勾选控件、表单标签和错误提示保留，分类仍可多选或不选。
+4. 权限弹窗不再把「知识库所有者 / 本项所有者」单独置顶；并入下方权限列表，只读展示。同一人兼任多个受保护身份时仍合并为一行。
+
+浏览器核对
+在本机 Vite（http://127.0.0.1:5173/knowledge-base-prototype/）用无头 Chrome 走主路径，打开前清空 localStorage。截图不在本仓库，保存在：
+- /workspace/kb-owner-recycle-20261125-evidence/01-recycle-default.png
+- /workspace/kb-owner-recycle-20261125-evidence/01b-recycle-filtered.png
+- /workspace/kb-owner-recycle-20261125-evidence/01c-recycle-empty.png
+- /workspace/kb-owner-recycle-20261125-evidence/03-settings-no-help-owner-in-list.png
+- /workspace/kb-owner-recycle-20261125-evidence/03b-settings-owner-row-transfer.png
+- /workspace/kb-owner-recycle-20261125-evidence/03c-create-library-no-help-wall.png
+- /workspace/kb-owner-recycle-20261125-evidence/03d-personal-settings-owner-readonly.png
+- /workspace/kb-owner-recycle-20261125-evidence/04-file-menu-no-external-handover.png
+- /workspace/kb-owner-recycle-20261125-evidence/04b-permissions-protected-in-list.png
+- /workspace/kb-owner-recycle-20261125-evidence/04c-permissions-owner-row.png
+- /workspace/kb-owner-recycle-20261125-evidence/05-library-cover-owner-no-external-handover.png
+- /workspace/kb-owner-recycle-20261125-evidence/06-intro-owner-and-transfer.png
+
+未覆盖
+- 制作方自测不是独立验收，也未声称视觉验收通过。
+- 未覆盖真实多窗口并发、本机配额失败、原生文件选择器，以及完整移动端视口矩阵。
+- 管理后台 AdminConsole、会议纪要类「任务负责人」文案，以及示例文档正文里的「负责人」用语未改，避免误伤非知识库所有者概念和模拟资料正文。
+- 部分截图拍摄时底部仍残留「已移入回收站」提示条，不影响页面结构判断。

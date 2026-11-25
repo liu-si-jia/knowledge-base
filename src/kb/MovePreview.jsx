@@ -14,6 +14,6 @@ export default function MovePreview({state,items,position,mode='move'}){
     {kind==='plaza'&&<p className="move-organization-warning">{label}后公司全员可查看。</p>}
     {kind==='personal'&&<p>{copy?'副本':'内容'}仅自己可见。</p>}
     <p>{copy?'原内容保留，副本继承目标目录权限。':restore&&same?'恢复到原位置，保留本项授权，继承权限按当前上级生效。':`${restore?'原普通授权将重置':'原位置不留副本'}，继承目标目录权限；原协作者可能失去访问。`}</p>
-    <details className="destination-permission-details"><summary>{restore&&same?'查看当前目录权限':'查看目标目录权限'}</summary><div className="move-impact-grants">{access.subjects.map(subject=><span key={`${subject.type}:${subject.id}`}>{subjectLabel(state,subject)} · {PERMISSION_ROLES.find(([id])=>id===subject.role)?.[1]||'原有权限'}</span>)}</div>{!copy&&<small>负责人保护按恢复或移动后的实际位置计算。</small>}</details>
+    <details className="destination-permission-details"><summary>{restore&&same?'查看当前目录权限':'查看目标目录权限'}</summary><div className="move-impact-grants">{access.subjects.map(subject=><span key={`${subject.type}:${subject.id}`}>{subjectLabel(state,subject)} · {PERMISSION_ROLES.find(([id])=>id===subject.role)?.[1]||'原有权限'}</span>)}</div>{!copy&&<small>所有者保护按恢复或移动后的实际位置计算。</small>}</details>
   </section>;
 }

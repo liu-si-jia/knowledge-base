@@ -3,11 +3,11 @@ import { creatorId, responsibleId } from './ownership.js';
 import { subjectMatches, subjectLabel, PERMISSION_ROLES, roleRights } from './permissions.js';
 
 export function handoverReason(state,id,entity='node',userId){
-  if(!['space','node'].includes(entity))return '请选择有效的交接对象';
+  if(!['space','node'].includes(entity))return '请选择有效的转交对象';
   const item=state[entity==='space'?'spaces':'nodes'].find(row=>row.id===id),library=entity==='space'?item:state.spaces.find(s=>s.id===item?.spaceId);
   if(!item||item.deletedAt||!library||library.deletedAt||entity==='node'&&!activeNode(state,item))return '内容已删除或不可用';
-  if(libraryType(library)==='personal')return '个人资料仅本人管理，不提供负责人交接';
-  if(userId!==responsibleId(item)&&userId!==responsibleId(library))return '只有当前负责人或知识库负责人可以交接';
+  if(libraryType(library)==='personal')return '个人资料仅本人管理，不提供所有者转交';
+  if(userId!==responsibleId(item)&&userId!==responsibleId(library))return '只有当前所有者或知识库所有者可以转交';
   if(!(entity==='space'?libraryRights(state,item,userId):contentRights(state,item,userId)).manage)return '当前没有管理权限';
   return '';
 }
@@ -24,13 +24,13 @@ export function handoverSnapshot(state,id,entity='node'){
 export function transferResponsibility(state,{id,entity='node',newResponsibleId,includeChildren=true,expected},userId){
   if(state.viewAs!==userId)throw Error('当前用户已变化，请重新操作');
   const reason=handoverReason(state,id,entity,userId);if(reason)throw Error(reason);
-  if(expected&&expected!==handoverSnapshot(state,id,entity))throw Error('负责人、目录内容或权限已变化，请重新打开核对');
+  if(expected&&expected!==handoverSnapshot(state,id,entity))throw Error('所有者、目录内容或权限已变化，请重新打开核对');
   const {item,eligible}=handoverScope(state,id,entity),oldResponsibleId=responsibleId(item),member=state.members.find(m=>m.id===newResponsibleId);
   if(!member||member.deletedAt||member.disabled||['inactive','disabled'].includes(member.status))throw Error('请选择有效的系统内部人员');
-  if(newResponsibleId===oldResponsibleId)throw Error('请选择与当前负责人不同的人员');
-  if(entity==='space'&&state.spaces.some(l=>l.id!==id&&!l.deletedAt&&responsibleId(l)===newResponsibleId&&l.name.trim().toLocaleLowerCase()===item.name.trim().toLocaleLowerCase()))throw Error('新负责人已有同名知识库，请先修改本知识库名称后再交接');
+  if(newResponsibleId===oldResponsibleId)throw Error('请选择与当前所有者不同的人员');
+  if(entity==='space'&&state.spaces.some(l=>l.id!==id&&!l.deletedAt&&responsibleId(l)===newResponsibleId&&l.name.trim().toLocaleLowerCase()===item.name.trim().toLocaleLowerCase()))throw Error('新所有者已有同名知识库，请先修改本知识库名称后再转交');
   const affected=includeChildren?eligible:[];
-  if(affected.some(n=>!contentRights(state,n,userId,true).manage))throw Error('部分下级内容缺少管理权限，未执行交接');
+  if(affected.some(n=>!contentRights(state,n,userId,true).manage))throw Error('部分下级内容缺少管理权限，未执行转交');
   const time=new Date().toISOString(),ids=new Set(affected.map(n=>n.id));if(entity==='node')ids.add(id);
   const changed=row=>({...row,creatorId:creatorId(row),responsibleId:newResponsibleId,updatedAt:time,lastHandover:{from:oldResponsibleId,to:newResponsibleId,by:userId,at:time}});
   const next={...state,...(entity==='space'?{spaces:state.spaces.map(row=>row.id===id?changed(row):row)}:{}),nodes:state.nodes.map(row=>ids.has(row.id)?changed(row):row)};

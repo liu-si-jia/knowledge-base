@@ -430,16 +430,16 @@
                   <span class="field-tag">名称</span>
                   <span class="field-tag">类型</span>
                   <span class="field-tag">位置</span>
-                  <span class="field-tag">负责人</span>
+                  <span class="field-tag">所有者</span>
                   <span class="field-tag">创建/更新时间</span>
                   <span class="pill pill-brand">大小(文件)</span>
                 </div>
                 <div class="detail-row">
                   <span class="cover-thumb" aria-hidden="true"><svg class="ico"><use href="#i-img"/></svg></span>
-                  <span class="cover-desc"><b>知识库封面仅负责人可改</b> · 本地图即时预览</span>
+                  <span class="cover-desc"><b>知识库封面仅所有者可改</b> · 本地图即时预览</span>
                 </div>
                 <div class="term-grid">
-                  <div class="term-box"><span>管理人</span><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><b>负责人</b><small>权限仍叫「可管理」</small></div>
+                  <div class="term-box"><span>管理人</span><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><b>所有者</b><small>权限仍叫「可管理」</small></div>
                   <div class="term-box"><span>时间</span><svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg><b>更新时间</b></div>
                 </div>
               </div>
@@ -519,28 +519,25 @@
         </div>
 
         <div class="permission-part">
-          <div class="part-title"><span>02</span><h3>特殊权限-负责人</h3><small>上置展示 · 菜单交接</small></div>
+          <div class="part-title"><span>02</span><h3>特殊权限-所有者</h3><small>列表内展示 · 行内转交</small></div>
           <div class="split-panel">
             <article class="diag-card">
               <div class="diag-head"><b>权限弹窗分层</b><span class="diag-tag">每级 1 位 · 默认创建人</span></div>
-              <div class="mini-modal" role="group" aria-label="权限面板上层固定置顶展示知识库负责人和本项负责人，不进列表不显添加者，库自身仅1位、同人合并；下层为普通四档协作权限列表">
-                <div class="modal-zone-top">
-                  <div class="zone-label"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg><span>固定置顶 · 不进列表 · 不显添加者</span></div>
-                  <div class="modal-row"><span class="modal-person"><span class="avatar-dot" aria-hidden="true">库</span>知识库负责人</span><span class="pill pill-brand">上置固定 · 库自身仅 1 位</span></div>
-                  <div class="modal-row"><span class="modal-person"><span class="avatar-dot" aria-hidden="true">项</span>本项负责人</span><span class="pill pill-lock">同人合并</span></div>
-                </div>
+              <div class="mini-modal" role="group" aria-label="权限列表面展示知识库所有者和本项所有者，只读不可改权限级别，库自身仅1位、同人合并；其后为普通四档协作权限">
                 <div class="modal-zone-list">
-                  <div class="zone-label">普通四档协作权限列表</div>
+                  <div class="zone-label"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg><span>权限列表 · 受保护身份只读</span></div>
+                  <div class="modal-row"><span class="modal-person"><span class="avatar-dot" aria-hidden="true">库</span>知识库所有者</span><span class="pill pill-brand">转交所有者</span><span class="pill pill-lock">可管理</span></div>
+                  <div class="modal-row"><span class="modal-person"><span class="avatar-dot" aria-hidden="true">项</span>本项所有者</span><span class="pill pill-lock">同人合并 · 只读</span></div>
                   <div class="skel-row" aria-hidden="true"><div class="skel-left"><span class="skel-dot"></span><span class="skel-bar"></span></div><span class="skel-role">可编辑</span></div>
                   <div class="skel-row" aria-hidden="true"><div class="skel-left"><span class="skel-dot"></span><span class="skel-bar is-short"></span></div><span class="skel-role">仅查看</span></div>
                 </div>
               </div>
             </article>
 
-            <div class="protect-stack" role="group" aria-label="知识库负责人在下级始终保护不可移除降权，祖先文件夹负责人无特殊保护在下级进入普通列表">
+            <div class="protect-stack" role="group" aria-label="知识库所有者在下级始终保护不可移除降权，祖先文件夹所有者无特殊保护在下级进入普通列表">
               <article class="protect-card is-brand">
                 <div class="protect-head">
-                  <span><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>知识库负责人</span>
+                  <span><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>知识库所有者</span>
                   <span class="pill pill-brand">下级始终保护</span>
                 </div>
                 <div class="mini-path">
@@ -559,11 +556,11 @@
 
               <article class="protect-card">
                 <div class="protect-head">
-                  <span>祖先文件夹负责人</span>
+                  <span>祖先文件夹所有者</span>
                   <span class="pill pill-warn">无特殊保护</span>
                 </div>
                 <div class="mini-path">
-                  <span class="path-node">上级负责人</span>
+                  <span class="path-node">上级所有者</span>
                   <svg class="ico-arr" aria-hidden="true"><use href="#i-arrow-r"/></svg>
                   <span class="path-node">下级普通可管理</span>
                 </div>
@@ -575,51 +572,51 @@
             </div>
           </div>
 
-          <div class="flow-panel stack-gap" role="group" aria-label="交接负责人从更多操作菜单进入，不在权限弹窗，个人库不交接；本项与知识库负责人可转交，继承可管理不可转；交接后原负责人完全退出，历史创建人保留">
+          <div class="flow-panel stack-gap" role="group" aria-label="转交所有者从权限列表中的所有者行进入，更多菜单和库封面等外部入口已去掉，个人库不转交；本项与知识库所有者可转交，继承可管理不可转；转交后原所有者完全退出，历史创建人保留">
             <div class="diag-head">
-              <b>交接负责人</b>
+              <b>转交所有者</b>
               <div class="pill-row">
-                <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>不在权限弹窗</span>
-                <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>个人库不交接</span>
+                <span class="pill pill-brand"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg>在权限列表内发起</span>
+                <span class="pill pill-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg>个人库不转交</span>
               </div>
             </div>
             <div class="flow-row is-3">
               <div class="handover-col">
-                <div class="handover-title"><svg class="ico" aria-hidden="true"><use href="#i-more"/></svg>菜单入口</div>
-                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>「更多操作」→ 交接负责人</span></div>
-                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-info"/></svg><span>库详情 / 文件夹 / 文件 / 文档页</span></div>
+                <div class="handover-title"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg>列表入口</div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>所有者行右侧「转交所有者」</span></div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-info"/></svg><span>权限管理 / 知识库设置</span></div>
               </div>
               <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
               <div class="handover-col">
                 <div class="handover-title">谁可转交</div>
-                <div class="handover-item is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>本项负责人</span></div>
-                <div class="handover-item is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>知识库负责人</span></div>
+                <div class="handover-item is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>本项所有者</span></div>
+                <div class="handover-item is-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg><span>知识库所有者</span></div>
                 <div class="handover-item is-ban"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>继承「可管理」不可转</span></div>
               </div>
               <div class="flow-arrow" aria-hidden="true"><svg class="ico-arr"><use href="#i-arrow-r"/></svg></div>
               <div class="handover-col">
-                <div class="handover-title">交接结果</div>
-                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>原负责人完全退出（不留可管理）</span></div>
-                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-shield"/></svg><span>兼库负责人仍保库身份</span></div>
+                <div class="handover-title">转交结果</div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-x"/></svg><span>原所有者完全退出（不留可管理）</span></div>
+                <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-shield"/></svg><span>兼库所有者仍保库身份</span></div>
                 <div class="handover-item"><svg class="ico-sm" aria-hidden="true"><use href="#i-info"/></svg><span>保留历史创建人</span></div>
               </div>
             </div>
           </div>
 
-          <div class="info-trio" role="group" aria-label="新建与设置页外部说明：新建个人库隐藏权限区，个人库设置不单独展示负责人权限，新建共享与广场库负责人用外部说明且广场另显全员默认查看">
+          <div class="info-trio" role="group" aria-label="新建与设置页不再使用说明墙：所有者在权限列表中只读展示，个人库不提供转交，广场另显全员默认查看">
             <div class="info-cell">
               <b>新建个人库</b>
-              <span class="info-line">隐藏权限区</span>
-              <span class="ext-note">外部说明：负责人（全部权限）</span>
+              <span class="info-line">所有者出现在权限列表</span>
+              <span class="info-line"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>只读可管理，不可转交</span>
             </div>
             <div class="info-cell">
               <b>个人库设置</b>
-              <span class="info-line">仅类型 + 创建人 / 负责人</span>
-              <span class="info-line"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>不单独展示负责人权限</span>
+              <span class="info-line">去掉类型与创建人说明墙</span>
+              <span class="info-line"><svg class="ico-sm" aria-hidden="true"><use href="#i-lock"/></svg>所有者在列表中只读展示</span>
             </div>
             <div class="info-cell is-org">
               <b>新建共享 / 广场库</b>
-              <span class="info-line">负责人用外部说明</span>
+              <span class="info-line">所有者在权限列表中展示</span>
               <span class="ext-note is-plaza">广场另显：全员默认查看</span>
             </div>
           </div>
@@ -648,7 +645,7 @@
               <span class="bridge-dir"><span>转为自定义</span><svg class="ico" aria-hidden="true"><use href="#i-arrow-r"/></svg></span>
               <div class="confirm-gate">
                 <strong><svg class="ico-sm" aria-hidden="true"><use href="#i-warn"/></svg>双向二次确认</strong>
-                <span>仅「可管理」可切（含负责人）</span>
+                <span>仅「可管理」可切（含所有者）</span>
                 <span>取消不切换</span>
               </div>
               <span class="bridge-dir is-back"><svg class="ico ico-rev" aria-hidden="true"><use href="#i-arrow-r"/></svg><span>改回继承</span></span>
@@ -659,7 +656,7 @@
                 <b>自定义模式</b>
                 <span class="pill pill-brand">快照独立</span>
               </div>
-              <div class="state-mech">快照当时普通权限（不含负责人）</div>
+              <div class="state-mech">快照当时普通权限（不含所有者）</div>
               <div class="pill-row">
                 <span class="pill pill-ok"><svg class="ico-sm" aria-hidden="true"><use href="#i-check"/></svg>自由加人 / 改权 / 移除</span>
                 <span class="pill pill-brand">父级再改不影响</span>
@@ -721,7 +718,7 @@
               <div class="kv-list">
                 <div class="kv-row"><span class="kv-key">前提</span><span>管理源内容 ＋ 编辑目标目录</span></div>
                 <div class="kv-row"><span class="kv-key">权限</span><span>清原授权，原件及活动子内容切回继承目标权限</span></div>
-                <div class="kv-row"><span class="kv-key">保留</span><span>原件负责人 ＋ 内容历史</span></div>
+                <div class="kv-row"><span class="kv-key">保留</span><span>原件所有者 ＋ 内容历史</span></div>
               </div>
             </article>
 

@@ -25,11 +25,11 @@ export function displayedResponsibles(state,item,entity='node'){
   if(!item)return [];
   const space=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId);if(!space)return [];
   const libraryId=responsibleId(space);
-  if(entity==='space'||libraryType(space)==='personal')return libraryId?[{id:libraryId,sources:['负责人']}]:[];
+  if(entity==='space'||libraryType(space)==='personal')return libraryId?[{id:libraryId,sources:['知识库所有者']}]:[];
   const itemId=responsibleId(item);
-  if(!libraryId)return itemId?[{id:itemId,sources:['本项负责人']}]:[];
-  if(libraryId===itemId)return [{id:libraryId,sources:['知识库负责人','本项负责人']}];
-  return [{id:libraryId,sources:['知识库负责人']},{id:itemId,sources:['本项负责人']}];
+  if(!libraryId)return itemId?[{id:itemId,sources:['本项所有者']}]:[];
+  if(libraryId===itemId)return [{id:libraryId,sources:['知识库所有者','本项所有者']}];
+  return [{id:libraryId,sources:['知识库所有者']},{id:itemId,sources:['本项所有者']}];
 }
 export const protectedManagers=displayedResponsibles;
 export const displayedResponsibleIds=(state,item,entity='node')=>[...new Set(displayedResponsibles(state,item,entity).map(row=>row.id).filter(Boolean))];

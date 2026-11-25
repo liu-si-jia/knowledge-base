@@ -40,7 +40,7 @@ test('库交接默认包含已删除下级，第三方负责人和历史创建�
 test('交接取消未调用提交无副作用；旧树快照和普通管理者提交被阻止',()=>{
  let {s,library,a}=fixture();const before=structuredClone(s),expected=handoverSnapshot(s,library.id,'space');assert.ok(expected);assert.deepEqual(s,before);
  s=createContent(s,{spaceId:library.id,format:'folder',name:'并发新目录'},s.meId).state;assert.throws(()=>transferResponsibility(s,{id:library.id,entity:'space',newResponsibleId:'chen-ke',expected},s.meId),/已变化/);
- s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('zhao-heng','manager')])},s.meId);s.viewAs='zhao-heng';assert.throws(()=>transferResponsibility(s,{id:a.id,newResponsibleId:'chen-ke'},'zhao-heng'),/只有当前负责人/);
+ s=saveEntityAccess(s,{id:library.id,entity:'space',access:accessFromSubjects(s,[person('zhao-heng','manager')])},s.meId);s.viewAs='zhao-heng';assert.throws(()=>transferResponsibility(s,{id:a.id,newResponsibleId:'chen-ke'},'zhao-heng'),/只有当前所有者/);
 });
 test('移动确认后的目标授权变化拒绝旧提交，不改变源位置',()=>{
  let {s,library,a}=fixture();const target=parentAccess(s,{spaceId:'space-retro',parentId:''}),before=get(s,a.id);s=saveEntityAccess(s,{id:'space-retro',entity:'space',access:accessFromSubjects(s,[person(s.meId,'editor')])},'zhao-heng');
