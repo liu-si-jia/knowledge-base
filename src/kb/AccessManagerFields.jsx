@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Buildings, UsersThree, UserCircle, Plus, X } from '@phosphor-icons/react';
 import { subjectKey, subjectLabel, accessFromSubjects } from './permissions.js';
-import { GrantNotices, SubjectPicker } from './GrantFields.jsx';
+import { PlazaFloorRow, SubjectPicker } from './GrantFields.jsx';
 import PermissionRolePicker, { permissionRoleOptions } from './PermissionRolePicker.jsx';
 import {
   DEFAULT_ADD_ROLE, collaboratorCaption, subjectCountLabel, MODE_SWITCH_COPY,
@@ -96,7 +96,6 @@ export default function AccessManagerFields({
   }).filter(row=>row.role);
 
   return <div className="grant-fields access-manager-fields">
-    {showFloorNotice&&<GrantNotices state={state} showOwners={false} floor={floor}/>}
     {allowModeSwitch&&<div className="grant-mode-bar">
       <div className="grant-mode-status"><span>当前</span><strong>{inheritLocked?'继承权限':'自定义权限'}</strong></div>
       <button type="button" className="grant-mode-switch" onClick={()=>setModePrompt(inheritLocked?'custom':'inherit')}>{inheritLocked?'转为自定义':'改回继承'}</button>
@@ -123,6 +122,7 @@ export default function AccessManagerFields({
           </div>
         </div>;
       })}
+      {showFloorNotice&&<PlazaFloorRow state={state} floor={floor} leading={floor[0]?<SubjectAvatar state={state} subject={floor[0]}/>:undefined}/>}
       {collaborators.map(subject=>{
         const key=subjectKey(subject),kind=inheritLocked?'inherited':classifyCollaborator(key,localKeys,inheritedKeys),name=subjectLabel(state,subject);
         const caption=collaboratorCaption(state,subject,{mode:currentMode});

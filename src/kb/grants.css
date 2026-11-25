@@ -127,4 +127,5 @@
 .grant-handover:disabled{opacity:.45;cursor:not-allowed}
 .grant-handover:focus-visible{outline:2px solid #3478f6;outline-offset:2px}
 .grant-list .grant-row.is-owner{background:#fbfcfe}
+.grant-list .grant-row.is-floor{background:#fbfcfe}
 .knowledge-product-dialog .library-category-field{margin-top:6px}

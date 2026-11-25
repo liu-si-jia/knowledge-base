@@ -12,13 +12,10 @@ import PermissionRolePicker, { permissionRoleOptions } from './PermissionRolePic
 const icons={company:Buildings,department:UsersThree,person:UserCircle};
 export const ownerPermissionNotice=name=>`所有者：${name}，拥有全部权限`;
 export const plazaPermissionNotice=orgName=>`全员查看：${orgName}，公司成员默认可查看`;
-export function GrantNotices({state,ownerIds=[],protectedRows,floor=[],showOwners=true}){
-  const protections=showOwners?(protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['知识库所有者']}))):[];
-  if(!protections.length&&!floor.length)return null;
-  return <div className="grant-notices">
-    {protections.map(row=><p className="grant-notice" key={row.id}>{ownerPermissionNotice(state.members.find(m=>m.id===row.id)?.name||'所有者')}</p>)}
-    {floor[0]&&<p className="grant-notice">{plazaPermissionNotice(subjectLabel(state,floor[0]))}</p>}
-  </div>;
+export function PlazaFloorRow({state,floor=[],leading}){
+  if(!floor[0])return null;
+  const orgName=subjectLabel(state,floor[0]),Icon=icons.company;
+  return <div className="grant-row is-floor">{leading||<Icon size={22}/>}<div className="grant-subject"><b>{plazaPermissionNotice(orgName)}</b></div><span className="grant-fixed-role">仅查看</span></div>;
 }
 export function GrantFields({state,value,onChange,ownerIds=[],protectedRows,floor=[],allowAdd=true,defaultRole='viewer',blocked=[],showOwners=true,heading='权限配置',explanationContext={}}){
   const [picker,setPicker]=useState(false),draft=toSubjectAccess(state,value,ownerIds),rows=mergeSubjects(draft.subjects,floor),floorKey=floor.length?subjectKey(floor[0]):'';
@@ -26,10 +23,10 @@ export function GrantFields({state,value,onChange,ownerIds=[],protectedRows,floo
   const protections=protectedRows||[...new Set(ownerIds.filter(Boolean))].map(id=>({id,sources:['知识库所有者']}));
   const visibleRows=rows.filter(s=>subjectKey(s)!==floorKey||s.role!=='viewer');
   return <div className="grant-fields">
-    <GrantNotices state={state} ownerIds={ownerIds} protectedRows={protections} floor={floor} showOwners={false}/>
     <div className="grant-heading"><span>{heading}</span>{allowAdd&&<button type="button" className="grant-add" onClick={()=>setPicker(true)}><Plus size={14}/>添加授权对象</button>}</div>
     <div className="grant-list">
       {showOwners&&protections.map(row=>{const subject={type:'person',id:row.id},label=subjectLabel(state,subject),Icon=icons.person;return <div className="grant-row is-owner" key={`owner:${row.id}`}><Icon size={22}/><div className="grant-subject"><b>{label}{row.sources.map(source=><span className="grant-owner-tag" key={source}>{source}</span>)}</b></div><span className="grant-fixed-role">可管理</span></div>;})}
+      <PlazaFloorRow state={state} floor={floor}/>
       {visibleRows.map(s=>{const Icon=icons[s.type],label=subjectLabel(state,s),fixed=subjectKey(s)===floorKey,actions=fixed?(s.role==='viewer'?[]:[{value:'remove',label:'撤销额外公司授权',description:'撤销后，公司全员仍可查看'}]):undefined;const explanation=explainPermission(state,s,{local:mergeSubjects(explanationContext.local||[],draft.subjects),inherited:explanationContext.inherited||[],excluded:explanationContext.excluded||[],floor,protectedRows:protections,sourceLabel:explanationContext.sourceLabel||'父级'});return <div className="grant-row" key={subjectKey(s)}><Icon size={22}/><div className="grant-subject"><b>{label}</b>{fixed&&<small>额外公司授权</small>}<PermissionSourceDetails explanation={explanation} localRole={draft.subjects.find(subject=>subjectKey(subject)===subjectKey(s))?.role}/></div><PermissionRolePicker label={`${label}的权限`} value={s.role} displayValue={explanation.effectiveRole} options={permissionRoleOptions(s.role,actions)} onChange={role=>change(role==='remove'?rows.filter(row=>subjectKey(row)!==subjectKey(s)):rows.map(row=>subjectKey(row)===subjectKey(s)?{type:s.type,id:s.id,role}:row))}/></div>;})}
       {allowAdd&&!visibleRows.length&&<p className="grant-empty">尚未添加其他授权对象</p>}
     </div>

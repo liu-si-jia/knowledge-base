@@ -1,0 +1,41 @@
+全员查看并入权限列表 · 制作方功能回归
+日期：2026-11-25（Asia/Shanghai）
+性质：制作方自测，不是独立验收，不代表验收通过。请勿合并、不要发 Pages、不要操作云效。
+基线：4e62dd77e1701cb364a8fe0cceaf7cf4a3fbc73b（GitHub main）
+分支：local/plaza-org-view-in-list
+工作区：/workspace/kb-plaza-grant-list-20261125-8fe4edee
+性质说明：可点击原型，仅模拟数据。禁止使用 Cursor 云端 Agent，改动在盒子本地完成。未改数据模型，也未改广场「公司全员查看」的业务规则本身，只调整展示位置。
+
+命令与计数
+1. node --test src/kb/plazaGrantList.test.mjs
+   结果：通过 5，失败 0。含介绍页不再写「广场另显」，以及 jsdom 挂载后的 4 项界面用例（新建弹窗选广场、广场设置、广场内容权限管理、个人/共享未误加）。
+2. node --test src/kb/*.test.mjs
+   结果：通过 175，失败 0，取消 0，跳过 0。
+   相对基线新增 5 项，并回归既有权限、分类、所有者列表、回收站搜索与分享移除用例。
+   汇总行：tests 175 / suites 5 / pass 175 / fail 0 / skipped 0。
+
+落地核对（制作方）
+1. 新建知识库（主页弹出、可选类型）：选「知识广场」后，「全员查看：北辰制造，公司成员默认可查看」出现在「权限配置」列表内，位于所有者行之后，右侧固定「仅查看」，不可改等级、不可移除、无角色下拉。列表上方不再单独置顶 grant-notice。选个人或共享时不出现该行。
+2. 知识库设置（广场库「组织知识广场」，需切换到所有者赵衡才有管理入口）：同样并入「所有协作者」列表，不再单独置顶。
+3. 权限管理（广场文档「组织知识使用说明」）：继承模式下同样并入列表，位于受保护所有者行之后。
+4. 已查个人库新建/设置、共享库设置：未误加全员查看行。移动预览里的「移动后公司全员可查看」是目的地规则提示，不是权限列表置顶条，未改。类型卡片上的「固定公司全员查看，可追加权限」是类型说明，不是权限列表置顶条，未改。
+5. 介绍页同步：去掉「广场另显：全员默认查看」，改为「广场全员查看在权限列表中只读展示」；对应 aria-label 同步为「广场全员查看并入权限列表」。未扩围重写。
+
+浏览器核对
+在本机 Vite（http://127.0.0.1:5174/knowledge-base-prototype/）用无头 Chrome（puppeteer-core + /usr/bin/google-chrome）走主路径，打开前清空 localStorage。截图不在本仓库，保存在：
+- /workspace/kb-plaza-grant-list-20261125-evidence/01-create-plaza-floor-in-list.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/01b-create-plaza-floor-row.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/02-plaza-settings-floor-in-list.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/02b-plaza-settings-floor-row.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/03-plaza-permissions-floor-in-list.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/03b-plaza-permissions-floor-row.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/04-create-personal-no-floor.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/04b-personal-settings-no-floor.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/04c-shared-settings-no-floor.png
+- /workspace/kb-plaza-grant-list-20261125-evidence/05-intro-plaza-in-list.png
+
+未覆盖
+- 制作方自测不是独立验收，也未声称视觉验收通过。
+- 未覆盖真实多窗口并发、本机配额失败，以及完整移动端视口矩阵。
+- 未改广场底线授权的计算、额外公司授权的撤销规则，也未改个人库/共享库创建规则。
+- 旧的 grant-notice 样式规则仍留在 CSS 中，但界面已不再渲染该置顶条。
