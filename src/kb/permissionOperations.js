@@ -3,6 +3,7 @@ import { responsibleId } from './ownership.js';
 import { accessFingerprint, effectiveAccess, spaceAccess, saveEntityAccess, validateAccess, contentRights, libraryRights, permissionLayers, displayedResponsibles, libraryLocalAccess, libraryType, permissionModeFor } from './access.js';
 import { accessFromSubjects, toSubjectAccess, subjectKey } from './permissions.js';
 import { prepareAddedCollaborators, rejectNonElevatingInherited } from './collaboratorRules.js';
+import { assertLibraryCategoryIds, libraryCategoryIds } from './libraryCategories.js';
 
 export function permissionTarget(state,id,entity,userId){
   const item=state[entity==='space'?'spaces':'nodes'].find(n=>n.id===id),rights=entity==='space'?libraryRights(state,item,userId):contentRights(state,item,userId);
@@ -29,15 +30,17 @@ export function addCollaborators(state,{id,entity='node',subjects,expected},user
   const combined=accessFromSubjects(state,[...direct.subjects,...elevated]);
   return recordSharingChange(state,saveEntityAccess(state,{id,entity,access:combined,...(entity==='node'?{localAccess:combined,permissionMode:'custom'}:{}),expected},userId),id,entity,userId);
 }
-export function savePermissionDetails(state,{id,entity='node',access,inherit,expected,name,description,expectedMetadata,localAccess,permissionMode,convertedBy,icon,cover,expectedAppearance},userId){
+export function savePermissionDetails(state,{id,entity='node',access,inherit,expected,name,description,expectedMetadata,localAccess,permissionMode,convertedBy,icon,cover,expectedAppearance,categoryIds,expectedCategories},userId){
   const target=permissionTarget(state,id,entity,userId);
   if(entity==='space'&&name!==undefined){
     if(expectedMetadata&&JSON.stringify([target.item.name,target.item.description||''])!==expectedMetadata)throw Error('知识库信息已在其他页面变化，请重新打开');
     if(expectedAppearance&&JSON.stringify([target.item.icon||null,target.item.cover||null])!==expectedAppearance)throw Error('知识库图标或封面已在其他页面变化，请重新打开');
     const title=name.trim();if(!title||title.length>40)throw Error('请输入 1–40 个字符的知识库名称');if(description.length>300)throw Error('简介不能超过 300 个字符');
     if(state.spaces.some(s=>s.id!==id&&!s.deletedAt&&responsibleId(s)===responsibleId(target.item)&&s.name.trim().toLocaleLowerCase()===title.toLocaleLowerCase()))throw Error('已有同名知识库，请换一个名称');
+    const nextCategories=categoryIds===undefined?libraryCategoryIds(target.item):assertLibraryCategoryIds(categoryIds);
+    if(expectedCategories!==undefined&&JSON.stringify(libraryCategoryIds(target.item))!==expectedCategories)throw Error('知识库分类已在其他页面变化，请重新打开');
     const next=saveEntityAccess(state,{id,entity,access,inherit,expected},userId);
-    return recordSharingChange(state,{...next,spaces:next.spaces.map(s=>s.id===id?{...s,name:title,description:description.trim(),...(icon?{icon}:{}),...(cover?{cover}:{})}:s)},id,entity,userId);
+    return recordSharingChange(state,{...next,spaces:next.spaces.map(s=>s.id===id?{...s,name:title,description:description.trim(),categoryIds:nextCategories,...(icon?{icon}:{}),...(cover?{cover}:{})}:s)},id,entity,userId);
   }
   return recordSharingChange(state,saveEntityAccess(state,{id,entity,access,inherit,expected,localAccess,permissionMode,convertedBy},userId),id,entity,userId);
 }

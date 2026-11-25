@@ -1,6 +1,5 @@
 import TreeCheckbox from './TreeCheckbox.jsx';
 import { selectionRoots as treeRoots, itemChecked, itemPartial, toggleTreeSelection, selectionSummary } from './treeSelection.js';
-import { didShareLibrary } from './sharing.js';
 import DirectorySortMenu from './DirectorySortMenu.jsx';
 import { directorySort, sortedDirectory } from './directorySort.js';
 import { responsibleId } from './ownership.js';
@@ -16,6 +15,7 @@ import { LibraryIcon } from './libraryIcons.jsx';
 import { LibraryCoverSurface, persistLibraryCover } from './LibraryMetadata.jsx';
 import './overlays.css';
 import { pinnedRecords, togglePin, visitContent } from './personalization.js';
+import { LIBRARY_CATEGORY_FILTERS, filterLibrariesByCategory, librariesInList, libraryCategoryNames } from './libraryCategories.js';
 import FileMenu from './FileMenu.jsx';
 import { handoverReason } from './handover.js';
 import { NameForm } from './ActionDialogs.jsx';
@@ -57,21 +57,33 @@ function LibraryCoverEditor({space,userId,update,say}){
 
 function LibraryCard({state,userId,space,section,update,openSettings,say}){
   const hasCover=!!space.cover&&space.cover.key!=='original',index=state.spaces.findIndex(s=>s.id===space.id),pinned=pinnedRecords(state,userId).some(p=>!p.nodeId&&p.spaceId===space.id),canManage=libraryRights(state,space,userId).manage;
+  const categories=libraryCategoryNames(space);
   const toggle=()=>{try{update(s=>togglePin(s,userId,space.id,section));say(pinned?'已取消置顶':'已添加到左侧置顶');}catch(e){say(e.message);}};
-  return <article className={`knowledge-card library-wide-card ${tones[index%tones.length]} ${hasCover?'has-library-cover':''}`}>{hasCover&&<LibraryCoverSurface cover={space.cover}/>}<button className={`knowledge-card-pin ${pinned?'is-pinned':''}`} type="button" aria-label={`${pinned?'取消置顶':'置顶'} ${space.name}`} aria-pressed={pinned} title={pinned?'取消置顶':'置顶到左侧'} onClick={toggle}><PushPin size={16} weight={pinned?'fill':'regular'}/></button><button type="button" className="knowledge-card-main" aria-label={`打开知识库 ${space.name}`} onClick={()=>go(url(space.id,section))}><div><LibraryIcon library={space} size={26}/><strong title={space.name}>{space.name}</strong></div><p title={space.description||''}>{space.description||'暂无简介'}</p></button>{canManage&&<button type="button" className="knowledge-card-settings" aria-label={`知识库设置 ${space.name}`} title="知识库设置" onClick={()=>openSettings(space)}><Gear size={16}/><span>知识库设置</span></button>}</article>;
+  return <article className={`knowledge-card library-wide-card ${tones[index%tones.length]} ${hasCover?'has-library-cover':''}`}>{hasCover&&<LibraryCoverSurface cover={space.cover}/>}<button className={`knowledge-card-pin ${pinned?'is-pinned':''}`} type="button" aria-label={`${pinned?'取消置顶':'置顶'} ${space.name}`} aria-pressed={pinned} title={pinned?'取消置顶':'置顶到左侧'} onClick={toggle}><PushPin size={16} weight={pinned?'fill':'regular'}/></button><button type="button" className="knowledge-card-main" aria-label={`打开知识库 ${space.name}`} onClick={()=>go(url(space.id,section))}><div><LibraryIcon library={space} size={26}/><strong title={space.name}>{space.name}</strong></div><p title={space.description||''}>{space.description||'暂无简介'}</p>{!!categories.length&&<span className="library-card-categories" role="list" aria-label={`${space.name}的已选分类`} title={categories.join('、')}>{categories.map(name=><span role="listitem" key={name}>{name}</span>)}</span>}</button>{canManage&&<button type="button" className="knowledge-card-settings" aria-label={`知识库设置 ${space.name}`} title="知识库设置" onClick={()=>openSettings(space)}><Gear size={16}/><span>知识库设置</span></button>}</article>;
 }
 
 export function LibraryPage({state,userId,section,startCreate,startUpload,onCreateLibrary,update,openSettings,say}){
   const [scope,setScope]=useState('all');
-  const visible=librariesForView(state,userId,section).filter(s=>!(section==='shared'&&scope==='created'&&!didShareLibrary(state,s,userId))&&!(section==='shared'&&scope==='joined'&&responsibleId(s)===userId));
+  const [category,setCategory]=useState('all');
+  const [categorySection,setCategorySection]=useState(section);
+  if(categorySection!==section){setCategorySection(section);setCategory('all');}
+  const inSection=librariesForView(state,userId,section);
+  const visible=librariesInList(state,userId,section,scope,category);
+  const sectionMatched=filterLibrariesByCategory(inSection,category);
   const editable=writableLibraries(state,userId,section).length>0;
   const cardProps={state,userId,section,update,openSettings,say};
+  const empty=category==='all'
+    ?{title:section==='shared'?'暂无共享知识库':section==='plaza'?'暂无全员可见内容':'还没有自己的知识库',body:section==='shared'?'创建共享知识库，或请协作者授权公司、部门或人员。':section==='plaza'?'创建广场知识库，或将内容移动到有编辑权限的广场目录。':'新建一个知识库，开始积累自己的资料。'}
+    :sectionMatched.length
+      ?{title:'当前范围内没有属于该分类的知识库',body:'当前范围页签下没有知识库。可以切换上方的范围页签，或改选其他分类。'}
+      :{title:'没有属于该分类的知识库',body:'当前列表里还没有归入该分类的知识库。'};
 
   return <><header className="knowledge-home-header"><h1>{titles[section]}</h1></header><div className="knowledge-actions with-upload kb-shortcut-actions"><CreateMenu variant="library" disabled={!editable} reason="当前没有可编辑的位置，请先创建知识库或获得编辑权限" onChoose={format=>startCreate(format,{category:section})}/><UploadMenu variant="library" disabled={!editable} reason="没有可编辑的位置" onChoose={kind=>startUpload({kind})}/><button type="button" className="kb-shortcut-create-library" onClick={onCreateLibrary}><span className="kb-shortcut-icon" aria-hidden="true"><BookBookmark size={22} weight="fill"/></span><span><strong>新建知识库</strong></span><CaretRight size={16}/></button></div>
 
     <section className="all-library-section" aria-label="全部知识库"><div className="knowledge-section-heading"><div className="knowledge-heading-main"><h2>全部知识库</h2>{section==='shared'&&<div className="knowledge-scope-tabs" role="tablist">{[['all','全部'],['created','我共享的'],['joined','与我共享']].map(([value,label])=><button className={scope===value?'active':''} type="button" key={value} onClick={()=>setScope(value)}>{label}</button>)}</div>}</div></div>
+      <div className="library-category-filter"><span id="library-category-caption">分类</span><div role="radiogroup" aria-labelledby="library-category-caption">{LIBRARY_CATEGORY_FILTERS.map(item=><label key={item.id} className={category===item.id?'active':''}><input type="radio" name={`library-category-${section}`} value={item.id} checked={category===item.id} onChange={()=>setCategory(item.id)}/><span>{item.name}</span></label>)}</div></div>
       <div className="knowledge-grid library-wide-grid">{visible.map(space=><LibraryCard key={space.id} {...cardProps} space={space}/>)}</div>
-      {!visible.length&&<Empty title={section==='shared'?'暂无共享知识库':section==='plaza'?'暂无全员可见内容':'还没有自己的知识库'} body={section==='shared'?'创建共享知识库，或请协作者授权公司、部门或人员。':section==='plaza'?'创建广场知识库，或将内容移动到有编辑权限的广场目录。':'新建一个知识库，开始积累自己的资料。'}/>}</section></>;
+      {!visible.length&&<Empty title={empty.title} body={empty.body}/>}</section></>;
 }
 
 export function SpaceDetail({state,userId,space,folderPath:requestedPath,detailAiOpen,setDetailAiOpen,openSettings,onHandover,onAction,onBatch,locateId,origin,startCreate,startUpload,folderDraft,onCloseFolder,onFolderCreated,openDoc,say,update}){

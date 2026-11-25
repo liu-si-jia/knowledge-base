@@ -12,6 +12,8 @@ import { persistLibraryIcon } from './libraryIcons.jsx';
 import LibraryMetadata, { persistLibraryCover } from './LibraryMetadata.jsx';
 import { loadState } from './store.js';
 import { savePermissionDetails } from './permissionOperations.js';
+import LibraryCategoryField from './LibraryCategoryField.jsx';
+import { libraryCategoryIds } from './libraryCategories.js';
 import './access.css';
 
 export const AccessFields=GrantFields;
@@ -21,12 +23,12 @@ function Unavailable({onClose,message='内容已不可用'}){return <div classNa
 function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSaved,settings=false,initialDraft,initialLocal,expectedOverride,onDelete}){
   const library=entity==='space'?item:state.spaces.find(s=>s.id===item.spaceId),protectedRows=displayedResponsibles(state,item,entity),ownerIds=protectedRows.map(row=>row.id),layers=entity==='node'?permissionLayers(state,item):null;
   const [draft,setDraft]=useState(()=>initialDraft||libraryLocalAccess(state,library)),[local,setLocal]=useState(()=>initialLocal||layers?.local),[mode,setMode]=useState(()=>entity==='node'?permissionModeFor({...item,...(layers?{permissionMode:layers.mode,localAccess:initialLocal||layers.local}:{})}):undefined),[convertedBy,setConvertedBy]=useState(()=>entity==='node'?item.convertedBy:undefined),[error,setError]=useState('');
-  const [name,setName]=useState(item.name),[description,setDescription]=useState(item.description||''),[icon,setIcon]=useState(item.icon||{kind:'preset',key:'book'}),[cover,setCover]=useState(item.cover||{kind:'preset',key:'original'}),[assetReading,setAssetReading]=useState(false),[busy,setBusy]=useState(false);
-  const fingerprint=useRef(expectedOverride||accessFingerprint(state,item,entity)),metadata=useRef(JSON.stringify([item.name,item.description||''])),appearance=useRef(JSON.stringify([item.icon||null,item.cover||null])),root=useRef(null),lock=useRef(false);
+  const [name,setName]=useState(item.name),[description,setDescription]=useState(item.description||''),[icon,setIcon]=useState(item.icon||{kind:'preset',key:'book'}),[cover,setCover]=useState(item.cover||{kind:'preset',key:'original'}),[categoryIds,setCategoryIds]=useState(()=>libraryCategoryIds(item)),[assetReading,setAssetReading]=useState(false),[busy,setBusy]=useState(false);
+  const fingerprint=useRef(expectedOverride||accessFingerprint(state,item,entity)),metadata=useRef(JSON.stringify([item.name,item.description||''])),appearance=useRef(JSON.stringify([item.icon||null,item.cover||null])),categorySnapshot=useRef(JSON.stringify(libraryCategoryIds(item))),root=useRef(null),lock=useRef(false);
   const save=async e=>{
     e.preventDefault();if(lock.current)return;if(assetReading){setError('请等待封面读取完成');return;}lock.current=true;setBusy(true);let persisted,persistedCover;
     try{
-      const fields={id:item.id,entity,access:draft,...(entity==='node'?{localAccess:local,permissionMode:mode,convertedBy}:{}),expected:fingerprint.current,...(settings?{name,description,expectedMetadata:metadata.current,expectedAppearance:appearance.current}:{})};
+      const fields={id:item.id,entity,access:draft,...(entity==='node'?{localAccess:local,permissionMode:mode,convertedBy}:{}),expected:fingerprint.current,...(settings?{name,description,expectedMetadata:metadata.current,expectedAppearance:appearance.current,categoryIds,expectedCategories:categorySnapshot.current}:{})};
       savePermissionDetails(loadState(),fields,userId);
       if(settings){persisted=await persistLibraryIcon(icon);persistedCover=await persistLibraryCover(cover);}
       let visibility;update(current=>{if(current.viewAs!==userId)throw Error('当前用户已变化，请重新操作');const next=savePermissionDetails(current,{...fields,...(persisted?{icon:persisted.icon,cover:persistedCover.cover}:{})},userId),target=next[entity==='space'?'spaces':'nodes'].find(n=>n.id===item.id);visibility=(entity==='space'?spaceAccess(next,target):effectiveAccess(next,target)).visibility;return next;});
@@ -34,9 +36,9 @@ function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSave
     }catch(err){await persisted?.rollback().catch(()=>{});await persistedCover?.rollback().catch(()=>{});setError(err.message);}finally{lock.current=false;setBusy(false);}
   };
   const title=settings?'知识库设置':'权限管理';
-  const initialForm=useRef({serialized:JSON.stringify([draft,local,mode,convertedBy,name,description,icon,cover]),iconFile:icon?.file,coverFile:cover?.file});
+  const initialForm=useRef({serialized:JSON.stringify([draft,local,mode,convertedBy,name,description,icon,cover,categoryIds]),iconFile:icon?.file,coverFile:cover?.file});
   const originalPermission=useRef(JSON.stringify([draft,local,mode,convertedBy])),permissionDirty=JSON.stringify([draft,local,mode,convertedBy])!==originalPermission.current;
-  const dirty=JSON.stringify([draft,local,mode,convertedBy,name,description,icon,cover])!==initialForm.current.serialized||icon?.file!==initialForm.current.iconFile||cover?.file!==initialForm.current.coverFile;
+  const dirty=JSON.stringify([draft,local,mode,convertedBy,name,description,icon,cover,categoryIds])!==initialForm.current.serialized||icon?.file!==initialForm.current.iconFile||cover?.file!==initialForm.current.coverFile;
   const {requestClose,prompt}=useDiscardGuard(dirty,onClose,busy||assetReading||lock.current);
   useLocationDialog(root,requestClose);
 
@@ -47,6 +49,7 @@ function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSave
       <p className="library-kind-readonly">知识库类型：{LIBRARY_TYPES[libraryType(library)]}</p>
       <p className="library-responsibility">历史创建人：{state.members.find(m=>m.id===creatorId(item))?.name||'未知成员'} · 当前负责人：{state.members.find(m=>m.id===responsibleId(item))?.name||'未知成员'}</p>
       {libraryType(library)==='plaza'&&<GrantNotices state={state} showOwners={false} floor={plazaFloor(state,library)}/>}
+      <LibraryCategoryField value={categoryIds} disabled={busy} onChange={next=>{setCategoryIds(next);setError('');}}/>
     </div>}
     {!(settings&&libraryType(library)==='personal')&&<fieldset className="permission-edit-fields" disabled={busy}>{libraryType(library)==='personal'?<GrantNotices state={state} ownerIds={ownerIds} protectedRows={protectedRows}/>:<AccessManagerFields state={state} userId={userId} local={entity==='space'?draft:local} inherited={entity==='space'?{subjects:[]}:layers.inherited} floor={entity==='space'?plazaFloor(state,library):layers.floor} ownerIds={ownerIds} protectedRows={protectedRows} personal={libraryType(library)==='personal'} mode={mode} allowModeSwitch={entity==='node'} showResponsibility={!settings} showFloorNotice={!settings} onModeChange={next=>{const result=switchNodePermissionMode(state,{...item,permissionMode:mode,localAccess:local,convertedBy},next,userId);setMode(result.permissionMode);setLocal(result.localAccess);setConvertedBy(result.convertedBy);setError('');}} onChange={value=>{if(entity==='space')setDraft(value);else setLocal(value);setError('');}}/>}</fieldset>}
     {permissionDirty&&(entity==='space'||item.type==='folder')&&<p className="access-note decision-note">保存后，仍处于继承模式的下级会跟随父级当前实际权限更新；已转为自定义的下级保持其快照，不再随本次修改变化。</p>}
@@ -54,17 +57,18 @@ function EditAccessDialog({state,userId,item,entity='node',update,onClose,onSave
   </form></div></>;
 }
 export function LibraryCreateDialog({state,userId,view='personal',chooseInitializer=false,update,onClose,onCreated}){
-  const [name,setName]=useState(''),[description,setDescription]=useState(''),[initializer,setInitializer]=useState(view),[drafts,setDrafts]=useState(()=>Object.fromEntries(['personal','shared','plaza'].map(v=>[v,initialAccess(state,v)]))),[error,setError]=useState(''),[icon,setIcon]=useState({kind:'preset',key:'book'}),[cover,setCover]=useState({kind:'preset',key:'mist'}),[assetReading,setAssetReading]=useState(false),[busy,setBusy]=useState(false);
+  const [name,setName]=useState(''),[description,setDescription]=useState(''),[initializer,setInitializer]=useState(view),[drafts,setDrafts]=useState(()=>Object.fromEntries(['personal','shared','plaza'].map(v=>[v,initialAccess(state,v)]))),[categoryIds,setCategoryIds]=useState([]),[error,setError]=useState(''),[icon,setIcon]=useState({kind:'preset',key:'book'}),[cover,setCover]=useState({kind:'preset',key:'mist'}),[assetReading,setAssetReading]=useState(false),[busy,setBusy]=useState(false);
   const root=useRef(null),lock=useRef(false);
-  const initialForm=useRef({serialized:JSON.stringify([name,description,initializer,drafts,icon,cover]),iconFile:icon?.file,coverFile:cover?.file});
-  const dirty=JSON.stringify([name,description,initializer,drafts,icon,cover])!==initialForm.current.serialized||icon?.file!==initialForm.current.iconFile||cover?.file!==initialForm.current.coverFile;
+  const initialForm=useRef({serialized:JSON.stringify([name,description,initializer,drafts,icon,cover,categoryIds]),iconFile:icon?.file,coverFile:cover?.file});
+  const dirty=JSON.stringify([name,description,initializer,drafts,icon,cover,categoryIds])!==initialForm.current.serialized||icon?.file!==initialForm.current.iconFile||cover?.file!==initialForm.current.coverFile;
   const {requestClose,prompt}=useDiscardGuard(dirty,onClose,busy||assetReading||lock.current);useLocationDialog(root,requestClose);
-  const submit=async e=>{e.preventDefault();if(lock.current)return;if(assetReading){setError('请等待封面读取完成');return;}lock.current=true;setBusy(true);let persisted,persistedCover;try{const fields={name,description,access:drafts[initializer],initializer};createLibrary(loadState(),fields,userId);persisted=await persistLibraryIcon(icon);persistedCover=await persistLibraryCover(cover);let result;update(s=>{if(s.viewAs!==userId)throw Error('当前用户已变化，请重新操作');result=createLibrary(s,{...fields,icon:persisted.icon,cover:persistedCover.cover},userId);return result.state;});onCreated(result.library);onClose();}catch(err){await persisted?.rollback().catch(()=>{});await persistedCover?.rollback().catch(()=>{});setError(err.message);}finally{lock.current=false;setBusy(false);}};
+  const submit=async e=>{e.preventDefault();if(lock.current)return;if(assetReading){setError('请等待封面读取完成');return;}lock.current=true;setBusy(true);let persisted,persistedCover;try{const fields={name,description,access:drafts[initializer],initializer,categoryIds};createLibrary(loadState(),fields,userId);persisted=await persistLibraryIcon(icon);persistedCover=await persistLibraryCover(cover);let result;update(s=>{if(s.viewAs!==userId)throw Error('当前用户已变化，请重新操作');result=createLibrary(s,{...fields,icon:persisted.icon,cover:persistedCover.cover},userId);return result.state;});onCreated(result.library);onClose();}catch(err){await persisted?.rollback().catch(()=>{});await persistedCover?.rollback().catch(()=>{});setError(err.message);}finally{lock.current=false;setBusy(false);}};
   return <>{prompt}<div className="knowledge-product-dialog-backdrop access-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!busy)requestClose();}}><form ref={root} className="knowledge-product-dialog access-dialog library-metadata-dialog" role="dialog" aria-modal="true" aria-label="新建知识库" onSubmit={submit}>
     <header><h2>新建知识库</h2><button type="button" className="access-close" aria-label="关闭新建知识库" disabled={busy} onClick={requestClose}><X size={19}/></button></header>
     <LibraryMetadata name={name} setName={setName} description={description} setDescription={setDescription} icon={icon} setIcon={setIcon} cover={cover} setCover={setCover} disabled={busy} onLoadingChange={setAssetReading} onEdit={()=>setError('')}/>
     <fieldset className="permission-edit-fields" disabled={busy}>{chooseInitializer&&<fieldset className="library-initial-types library-initial-cards"><legend>知识库类型</legend>{[['personal','个人','仅本人管理，协作时需移动内容'],['shared','共享','可授权公司、部门或人员协作'],['plaza','知识广场','固定公司全员查看，可追加权限']].map(([id,label,description])=><label className={initializer===id?'selected':''} key={id}><input type="radio" name="library-initializer" value={id} checked={initializer===id} onChange={()=>{setInitializer(id);setError('');}}/><span><b>{label}</b><small>{description}</small></span></label>)}</fieldset>}
     {!chooseInitializer&&<p className="library-kind-readonly">知识库类型：{LIBRARY_TYPES[initializer]}</p>}
+    <LibraryCategoryField value={categoryIds} disabled={busy} onChange={next=>{setCategoryIds(next);setError('');}}/>
     {initializer==='personal'?<GrantNotices state={state} ownerIds={[userId]}/>:<GrantFields state={state} value={drafts[initializer]} onChange={value=>{setDrafts(current=>({...current,[initializer]:value}));setError('');}} ownerIds={[userId]} floor={initializer==='plaza'?plazaFloor(state,{kind:'plaza'}):[]} allowAdd defaultRole={initializer==='plaza'?'editor':'viewer'}/>}
     </fieldset>
     {error&&<p className="access-error" role="alert">{error}</p>}<footer><button type="button" disabled={busy} onClick={requestClose}>取消</button><button type="submit" disabled={busy||assetReading}>{busy?'创建中…':'创建知识库'}</button></footer>

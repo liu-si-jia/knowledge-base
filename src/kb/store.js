@@ -1,4 +1,5 @@
 import { migrateAccess, libraryRights, contentRights, librariesForView, CAPABILITIES } from './access.js';
+import { libraryCategoryIds } from './libraryCategories.js';
 import { DATA_VERSION, initializePrototypeResources } from './prototypeData.js';
 export const STORAGE_KEY = "kb-prototype-v3";
 const KEY=STORAGE_KEY;
@@ -59,12 +60,12 @@ export function seedState() {
       { id: "team-delivery", name: "交付项目", secret: false, intro: "项目复盘只在项目组内可见", members: { "zhou-ning": "manager", "zhao-heng": "editor" } },
     ],
     spaces: [
-      {id:'space-personal',kind:'personal',name:'周宁的个人知识库',description:'仅自己可见的草稿和备忘',ownerId:'zhou-ning',icon:{kind:'preset',key:'book'},cover:{kind:'preset',key:'mist'},access:{subjects:[]},members:[]},
-      {id:'space-handbook',kind:'shared',name:'产品手册库',description:'产品部协作，授权范围不改变知识库类型',ownerId:'zhou-ning',icon:{kind:'preset',key:'manual'},cover:{kind:'preset',key:'glass'},access:{subjects:[{type:'department',id:'product',role:'editor'},{type:'person',id:'lin-xia',role:'downloader'}]},members:[]},
-      {id:'space-retro',kind:'shared',name:'交付复盘库',description:'当前负责人及上级文件夹负责人共同管理内容',ownerId:'zhao-heng',icon:{kind:'preset',key:'notes'},cover:{kind:'preset',key:'sand'},access:{subjects:[{type:'person',id:'zhou-ning',role:'manager'},{type:'department',id:'delivery',role:'editor'}]},members:[]},
-      {id:'space-company-share',kind:'shared',name:'公司协作资料',description:'授权全公司查看，仍然属于共享知识库',ownerId:'chen-ke',icon:{kind:'preset',key:'chat'},cover:{kind:'preset',key:'mint'},access:{subjects:[{type:'company',id:'beichen-demo',role:'viewer'},{type:'person',id:'zhou-ning',role:'editor'}]},members:[]},
-      {id:'space-plaza',kind:'plaza',name:'组织知识广场',description:'公司全员始终可查看，其他操作单独授权',ownerId:'zhao-heng',icon:{kind:'preset',key:'plane'},cover:{kind:'preset',key:'lavender'},access:{subjects:[{type:'person',id:'zhou-ning',role:'editor'}]},members:[]},
-      {id:'space-chen-personal',kind:'personal',name:'陈可的个人知识库',description:'个人资料仅本人可见',ownerId:'chen-ke',icon:{kind:'preset',key:'book'},access:{subjects:[]},members:[]},
+      {id:'space-personal',kind:'personal',name:'周宁的个人知识库',description:'仅自己可见的草稿和备忘',ownerId:'zhou-ning',icon:{kind:'preset',key:'book'},cover:{kind:'preset',key:'mist'},categoryIds:[],access:{subjects:[]},members:[]},
+      {id:'space-handbook',kind:'shared',name:'产品手册库',description:'产品部协作，授权范围不改变知识库类型',ownerId:'zhou-ning',icon:{kind:'preset',key:'manual'},cover:{kind:'preset',key:'glass'},categoryIds:['policy'],access:{subjects:[{type:'department',id:'product',role:'editor'},{type:'person',id:'lin-xia',role:'downloader'}]},members:[]},
+      {id:'space-retro',kind:'shared',name:'交付复盘库',description:'当前负责人及上级文件夹负责人共同管理内容',ownerId:'zhao-heng',icon:{kind:'preset',key:'notes'},cover:{kind:'preset',key:'sand'},categoryIds:['project'],access:{subjects:[{type:'person',id:'zhou-ning',role:'manager'},{type:'department',id:'delivery',role:'editor'}]},members:[]},
+      {id:'space-company-share',kind:'shared',name:'公司协作资料',description:'授权全公司查看，仍然属于共享知识库',ownerId:'chen-ke',icon:{kind:'preset',key:'chat'},cover:{kind:'preset',key:'mint'},categoryIds:['policy','project'],access:{subjects:[{type:'company',id:'beichen-demo',role:'viewer'},{type:'person',id:'zhou-ning',role:'editor'}]},members:[]},
+      {id:'space-plaza',kind:'plaza',name:'组织知识广场',description:'公司全员始终可查看，其他操作单独授权',ownerId:'zhao-heng',icon:{kind:'preset',key:'plane'},cover:{kind:'preset',key:'lavender'},categoryIds:['policy','training'],access:{subjects:[{type:'person',id:'zhou-ning',role:'editor'}]},members:[]},
+      {id:'space-chen-personal',kind:'personal',name:'陈可的个人知识库',description:'个人资料仅本人可见',ownerId:'chen-ke',icon:{kind:'preset',key:'book'},categoryIds:['training'],access:{subjects:[]},members:[]},
     ],
     nodes: [
       {id:'doc-faq',spaceId:'space-handbook',parentId:'',type:'doc',format:'doc',name:'报销需要哪些材料',body:'差旅报销需要发票、行程单和部门负责人确认。市内交通只保留电子发票。',ownerId:'zhou-ning',favorite:true,updatedAt:daysAgo(1),deletedAt:'',faq:true},
@@ -93,7 +94,7 @@ export function normalizeState(state) {
     teams: list(state.teams).filter(Boolean).map(team => ({ ...team, members: team.members && typeof team.members === "object" && !Array.isArray(team.members) ? team.members : {} })),
     departments: list(state.departments),
     tags: list(state.tags),
-    spaces: list(state.spaces).filter(Boolean).map(space => ({ ...space, kind:space.kind||'shared', members: list(space.members) })),
+    spaces: list(state.spaces).filter(Boolean).map(space => ({ ...space, kind:space.kind||'shared', members: list(space.members), categoryIds: libraryCategoryIds(space) })),
     nodes: list(state.nodes).filter(Boolean).map(node => ({ ...node, createdAt:node.createdAt||node.updatedAt||new Date().toISOString(), members: list(node.members) })),
     recents: list(state.recents),
   });

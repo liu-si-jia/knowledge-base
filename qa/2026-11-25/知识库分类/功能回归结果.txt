@@ -1,0 +1,33 @@
+知识库分类 · 制作方功能回归
+日期：2026-11-25
+性质：制作方自测，不是独立验收，不代表验收通过。
+基线：56f9517385962407f9753f83536ad6e8633d1498（fix: clarify library cover, demo identity, and create labels）
+
+命令与计数
+1. node --test src/kb/libraryCategories.test.mjs
+   结果：通过 7，失败 0，跳过 0。
+   含 5 项数据/规则测试，以及界面套件中的 2 项（jsdom 挂载原型后点击筛选、新建、设置、恢复示例、库内与主页）。
+2. node --test src/kb/*.test.mjs
+   结果：通过 165，失败 0，取消 0，跳过 0。
+   其中包含上述分类测试，并回归既有权限、库设置、共享页签、搜索、归一化与固定类型用例。
+   汇总行：tests 165 / pass 165 / fail 0 / skipped 0。
+
+浏览器核对
+在本机 Vite（http://127.0.0.1:5173/knowledge-base-prototype/）用无头 Chrome 走主路径，并在打开页面前清空 localStorage。脚本断言与截图一致，包括：个人库未分类卡片无标签、共享多分类卡片、制度规范筛选与「与我共享」叠加、广场双分类、主页无分类筛选、新建与设置只出现三项勾选、库内目录无分类。截图不在本仓库，保存在运行产物：
+- /opt/cursor/artifacts/kb-categories/01-personal-all.png
+- /opt/cursor/artifacts/kb-categories/02-personal-uncategorized.png
+- /opt/cursor/artifacts/kb-categories/03-shared-all.png
+- /opt/cursor/artifacts/kb-categories/04-shared-policy.png
+- /opt/cursor/artifacts/kb-categories/05-shared-joined-policy.png
+- /opt/cursor/artifacts/kb-categories/06-plaza-all.png
+- /opt/cursor/artifacts/kb-categories/07-plaza-training.png
+- /opt/cursor/artifacts/kb-categories/08-home.png
+- /opt/cursor/artifacts/kb-categories/09-create-categories.png
+- /opt/cursor/artifacts/kb-categories/10-settings-categories.png
+- /opt/cursor/artifacts/kb-categories/11-inside-library.png
+
+未覆盖
+- 未使用既有 Ego 空间做独立验收，也未声称视觉验收通过。
+- 未覆盖真实多窗口并发、本机配额失败、原生文件选择器，以及移动端触控以外的完整视口矩阵。
+- 分类筛选保存在当前列表页的内存状态中，刷新后回到「全部分类」；按约定不写入 URL。
+- 无头浏览器会命中 hover:none，库卡片底部「知识库设置」条保持可见。带悬停的桌面浏览器仍沿用原有的悬停显示。

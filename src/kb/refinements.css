@@ -51,3 +51,12 @@
 /* Sidebar pin membership stays unchanged; card pin affordances appear on interaction. */
 .library-wide-card>.knowledge-card-pin,.library-wide-card>.knowledge-card-pin.is-pinned{opacity:0;pointer-events:none;transition:opacity .14s ease}
 .library-wide-card:hover>.knowledge-card-pin,.library-wide-card:focus-within>.knowledge-card-pin{opacity:1;pointer-events:auto}
+.library-category-filter{display:flex;align-items:flex-start;gap:10px;margin:14px 0 2px;min-width:0}
+.library-category-filter>span{flex:0 0 auto;margin-top:5px;color:#98a2b3;font-size:12px;font-weight:500;line-height:18px}
+.library-category-filter [role=radiogroup]{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.library-category-filter label{position:relative;display:inline-flex;align-items:center;height:28px;margin:0;padding:0 10px;border:1px solid transparent;border-radius:14px;background:transparent;color:#667085;font-size:12px;line-height:28px;cursor:pointer}
+.library-category-filter label.active{border-color:#e4e7ec;background:#f4f7fb;color:#344054;font-weight:600}
+.library-category-filter input{position:absolute;width:1px;height:1px;margin:0;opacity:0}
+.library-category-filter label:has(input:focus-visible){outline:2px solid #79a6ee;outline-offset:2px}
+.library-wide-card .library-card-categories{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px;max-height:40px;margin:10px 0 0;overflow:hidden}
+.library-wide-card .library-card-categories>[role=listitem]{max-width:100%;overflow:hidden;padding:0 6px;border:1px solid rgba(44,62,80,.16);border-radius:4px;background:rgba(255,255,255,.88);color:#24384c;font-size:10px;line-height:18px;text-overflow:ellipsis;white-space:nowrap}
