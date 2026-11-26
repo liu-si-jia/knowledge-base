@@ -1,0 +1,81 @@
+精简删除确认文案并统一编辑顶栏 · 制作方功能回归
+日期：2026-11-26（Asia/Shanghai）
+性质：制作方自测，不是独立验收，不代表验收通过。请勿合并、不要发 Pages、不要操作云效。
+基线：683729e61410a29d733485adc49f9effe8ebc5c1（GitHub main）
+分支：local/tighten-delete-copy-unify-editor-toolbar
+工作区：/workspace/kb-copy-toolbar-20261126-8fe4edee
+性质说明：可点击原型，仅模拟数据。禁止使用 Cursor 云端 Agent，改动在盒子本地完成。未改删除/回收站/永久删除的业务规则，只收紧确认说明文案，并统一编辑区顶栏样式与共同元素。
+
+命令与计数
+1. node --test src/kb/deleteCopy.test.mjs
+   结果：通过 4，失败 0。含删除确认短文案单元测试，以及 jsdom 挂载后的 3 项界面用例（知识库设置删除确认、删除文件确认、编辑顶栏补上切换身份与设置）。
+2. node --test src/kb/*.test.mjs
+   结果：通过 179，失败 0，取消 0，跳过 0。
+   相对上次已知基线 175 项新增 4 项，并回归既有权限、分类、所有者列表、回收站搜索与分享移除等用例。
+   汇总行：tests 179 / suites 6 / pass 179 / fail 0 / skipped 0。
+
+文案排查清单（改了哪些）
+1. 删除知识库确认：由「知识库及其中内容将移入回收站，原有单独删除的内容保持删除。删除后可在回收站恢复。未保存的设置不会生效。」改为约定逐字文案「知识库和其中的内容将移入回收站，之后可在回收站恢复。」错误信息仍附在句后，不写入说明正文。
+2. 删除文件确认：由「内容将移入回收站。删除后可在回收站恢复。」改为「该内容将移入回收站，之后可在回收站恢复。」
+3. 删除文件夹确认：由「文件夹及其全部子内容将移入回收站。删除后可在回收站恢复。」改为「文件夹和其中的内容将移入回收站，之后可在回收站恢复。」
+4. 批量删除确认：保留已选摘要，随后按是否包含文件夹使用上述结果句；仅文件时用「所选内容将移入回收站，之后可在回收站恢复。」
+5. 彻底删除知识库确认：由「知识库及其中全部内容将永久删除，无法恢复。其他位置的独立副本保留。」改为「知识库和其中的内容将永久删除，无法恢复。」
+6. 彻底删除回收站内容确认：由「永久删除原内容及全部子内容，无法恢复。」改为文件「该内容将永久删除，无法恢复。」、文件夹「该内容和其中的内容将永久删除，无法恢复。」
+
+文案排查清单（故意没改及理由）
+- 回收站「恢复知识库」「恢复原内容」确认：属于恢复说明，不是删除确认，且本次范围未要求改恢复文案。
+- 「放弃新建」确认、离开编辑页「新建内容尚未保存」提示：针对未首次保存的草稿，不进入回收站，不是本批删除确认。
+- 侧栏「恢复示例数据」确认：清掉本机演示数据，不是知识库内容删除。
+- 结果 toast「知识库已移入回收站」「已移入回收站」：已是从用户结果出发的短提示，保持原样。
+- 权限/校验错误（如缺少管理权限、内容已变化需重新确认）：不是确认说明，仍按原规则抛出并附在确认框后。
+- 介绍页「恢复误删资料 · 确认后彻底删除」：功能入口简述，不是确认弹窗正文，按「最小同步、不扩围重写」未改。
+- 弹窗标题（如「删除知识库「日常汇报」？」「彻底删除知识库」「彻底删除原内容」）保持原样，只收紧说明正文。
+- 产品中不存在「清空回收站」入口，故无对应文案可改。
+- 未改回收站、可恢复、已单独删除内容保持删除、未保存设置不生效等实际业务规则。
+
+顶栏对齐
+- 对照对象是知识库内页常规顶栏 `.knowledge-detail-toolbar`（高度 58px、底边 #e6e8eb、按钮 34px / 圆角 8px / 字号 12px / 颜色 #696c72）。主页与个人/共享/广场列表页是大标题区，不是同一条工具顶栏；编辑页是无侧栏的独立壳，因此与库内页顶栏对齐。
+- 编辑顶栏改为固定 58px、统一边框/间距/按钮样式，返回增加与库内页一致的箭头，保留「返回 {知识库名}」原文案。
+- 「原型演示 · 切换身份」和「设置」：编辑页没有侧栏身份区，为保持原型共同顶栏元素一致，已补到编辑顶栏右侧、头像之前。设置打开当前知识库设置（无管理权限时禁用，与库内页相同），不是新增编辑能力。保存、放弃新建、草稿状态、返回、AI、更多菜单的行为与文案逻辑未改。
+
+浏览器核对
+在本机 Vite（http://127.0.0.1:5174/knowledge-base-prototype/，未占用已冻结的 :5173）用无头 Chrome（puppeteer-core + /usr/bin/google-chrome）走主路径，打开前清空 localStorage。为贴近用户标注，会话中创建了个人知识库「日常汇报」和表格「未命名表格」。截图不在本仓库，保存在：
+- /workspace/kb-copy-toolbar-20261126-evidence/01-home-toolbar-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/01-home-toolbar-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/01-home-toolbar-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/01-home-toolbar-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/02-library-toolbar-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/02-library-toolbar-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/02-library-toolbar-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/02-library-toolbar-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/03-delete-library-confirm-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/03-delete-library-confirm-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/03-delete-library-confirm-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/03-delete-library-confirm-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04-delete-file-confirm-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04-delete-file-confirm-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04-delete-file-confirm-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04-delete-file-confirm-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04b-delete-folder-confirm-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04b-delete-folder-confirm-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04b-delete-folder-confirm-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/04b-delete-folder-confirm-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05-recycle-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05-recycle-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05-permanent-delete-content-confirm-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05-permanent-delete-content-confirm-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05-permanent-delete-content-confirm-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05-permanent-delete-content-confirm-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05b-permanent-delete-library-confirm-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05b-permanent-delete-library-confirm-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05b-permanent-delete-library-confirm-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/05b-permanent-delete-library-confirm-page-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/06-editor-toolbar-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/06-editor-toolbar-after.png
+- /workspace/kb-copy-toolbar-20261126-evidence/06-editor-toolbar-page-before.png
+- /workspace/kb-copy-toolbar-20261126-evidence/06-editor-toolbar-page-after.png
+
+未覆盖
+- 制作方自测不是独立验收，也未声称视觉验收通过。本次按快速预览安排，不安排独立验收。
+- 未覆盖真实多窗口并发、本机配额失败，以及完整移动端视口矩阵。
+- 未改删除入回收站、永久删除、已单独删除内容、未保存设置等业务规则本身。

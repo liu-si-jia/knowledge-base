@@ -52,24 +52,66 @@
   position:sticky;
   top:0;
   z-index:30;
-  flex:0 0 auto;
-  min-height:56px;
-  height:auto;
-  gap:12px;
-  padding:8px 20px;
-  border-bottom:1px solid #e7e9ed;
+  box-sizing:border-box;
+  flex:0 0 58px;
+  min-height:58px;
+  height:58px;
+  gap:8px;
+  padding:0 20px;
+  border-bottom:1px solid #e6e8eb;
   background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:nowrap;
 }
 .knowledge-doc-shell .document-chrome-bar .knowledge-doc-back{
-  height:auto;
-  padding:0 10px 0 0;
+  height:34px;
+  padding:0 10px;
   border:0;
+  border-radius:8px;
   background:transparent;
+  color:#696c72;
+  font-size:12px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
   white-space:nowrap;
   flex:0 0 auto;
+  text-decoration:none;
+  cursor:pointer;
 }
+.knowledge-doc-shell .document-chrome-bar .knowledge-doc-back svg{transform:rotate(180deg);flex:0 0 auto;}
+.knowledge-doc-shell .document-chrome-bar .knowledge-doc-back:hover{background:#f1f3f6;color:#25272b;}
 .knowledge-doc-shell .document-chrome-bar .document-window-title{min-width:0;flex:1;}
-.knowledge-doc-shell .document-chrome-bar .document-window-actions{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;}
+.knowledge-doc-shell .document-chrome-bar .document-window-title strong{font-size:15px;font-weight:600;color:#25272b;}
+.knowledge-doc-shell .document-chrome-bar .document-window-actions{
+  flex:0 1 auto;
+  flex-wrap:nowrap;
+  justify-content:flex-end;
+  align-items:center;
+  gap:6px;
+  min-width:0;
+}
+.knowledge-doc-shell .document-chrome-bar .document-window-actions>span{margin-right:0;color:#696c72;font-size:12px;}
+.knowledge-doc-shell .document-chrome-bar .document-window-actions .new-saved-status{color:#696c72;font-size:12px;}
+.knowledge-doc-shell .document-chrome-bar .document-window-actions button{
+  height:34px;
+  min-height:34px;
+  padding:0 10px;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:#696c72;
+  font-size:12px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.knowledge-doc-shell .document-chrome-bar .document-window-actions button:hover{background:#f1f3f6;color:#25272b;}
+.knowledge-doc-shell .document-chrome-bar .document-window-actions button:disabled{opacity:.45;cursor:not-allowed;}
+.knowledge-doc-shell .document-chrome-bar .kb-inline-identity{margin-right:0;flex:0 0 auto;}
+.knowledge-doc-shell .document-chrome-bar .document-window-actions>.avatar-small{width:28px;height:28px;flex:0 0 28px;}
 .knowledge-doc-shell .standalone-document-page.document-editor-area{
   height:auto;
   min-height:0;
