@@ -1,0 +1,87 @@
+按确认项改问AI八项展示与交互 · 制作方功能回归
+日期：2026-11-27（Asia/Shanghai）
+性质：制作方自测，不是独立验收，不代表验收通过。请勿合并、不要发 Pages、不要操作云效。
+基线：d43baade83fd870de6c8811b586c2af77a1505b7（GitHub main，tree b132ef52e5aa92ee3297555851439fd3ab237f7b）
+分支：local/ask-ai-eight-updates
+工作区：/workspace/kb-ask-ai-eight-20261127-8fe4edee
+性质说明：可点击原型，仅模拟数据与模拟交互。禁止使用 Cursor 云端 Agent，改动在盒子本地完成。范围严格限制为已确认的 8 项问 AI 展示与交互。未改知识库权限、分类、OnlyOffice 蒙层、主侧栏置顶业务、管理后台或旧 App.jsx 中与问 AI 无关的内容，也未新增历史置顶/分享、技能市场，以及截图里未约定的「信息源」「定时任务」「技能广场」「Workbuddy」角标等项。
+
+命令与计数
+1. node --test src/kb/askComposer.test.mjs src/kb/askHistory.test.mjs src/kb/askAiUpdates.test.mjs
+   结果：通过 14，失败 0。含知识分组/多选计数、技能批次与模型/提示词辅助函数，既有历史分组/搜索/重命名/删除单元测试，以及 jsdom 挂载后的 7 项界面用例。
+2. node --test src/kb/*.test.mjs
+   结果：通过 193，失败 0，取消 0，跳过 0。
+   相对上次已知基线 186 项新增 7 项（askComposer 单元测试 4 项，问 AI 界面用例由 4 项增至 7 项，净增 3 项），并回归既有权限、分类、所有者列表、回收站搜索、分享移除与编辑顶栏等用例。
+   汇总行：tests 193 / suites 7 / pass 193 / fail 0 / skipped 0。
+
+8 项落地说明
+1. 点 @ 或输入「@」先弹出知识库列表（图标 + 名称，数据来自现有可见知识库，如「周宁的个人知识库」，未使用标注里的「刘思家的个人知识库」）；最下一条是「@ 从知识库选择更多」。点列表项直接选中；点「从知识库选择更多」打开「选择更多」弹窗。弹窗含「最近使用」「知识库目录」Tab（默认知识库目录）、搜索框占位「搜索团队、知识库、知识」，以及团队 / 知识库 / 目录三列。团队用现有模拟数据中的「个人」「产品团队」「交付项目」「北辰制造」。可多选知识库及其下级文件、文件夹，父级与子级可同时存在并按条目计数；底部「已选 N 个」可展开已选清单，右侧取消/确认。确认后在输入区顶部以标签展示，可单独点 X 移除。
+2. 首页四张能力卡改为图标 + 标题 + 一行描述的横排白底卡片，右下角「换一换」可在两批模拟技能卡间循环（第一批：知识问答 / 帮我写作 / 数据分析 / 会议纪要；第二批：一键翻译文档 / 一键搭建知识库 / 长文秒变知识图解 / 制作调研 PPT）。点卡片仍进入相应模拟能力。未加 Workbuddy 或其它品牌角标。
+3. 点录音后输入区变为深色录音条：左侧保留 +，中间为模拟波形，右侧为时长、取消、停止和发送。取消回到普通输入且不发送；停止后保留条并可再发送或取消；发送进入一段将录音理解为模拟文案的对话。不使用真实麦克风。
+4. 输入框增加「问答模式 / Agent 模式」，默认问答模式。点「+」打开设置层：顶部两个模式 Tab，并带说明（问答：「基于知识库搜索，优先保证回答速度」；Agent：「Agent 可自主规划与执行复杂任务」）。问答模式只能 @ 知识库，菜单有联网搜索和深度思考开关，不展示上传入口。Agent 模式可使用技能（打开既有 / 技能窗口）、上传附件和图片，也有深度思考开关，@ 知识库仍可用。从 Agent 切回问答时去掉已选图片和附件，知识库标签保留。输入区左侧为 + 与 @，不再把旧的「技能」「知识」并列下拉作为唯一入口。未加入截图里多出的「信息源」。
+5. 输入框有文字后，在模型选择左侧显示优化提示词图标，悬停文案为「点我帮你优化提示词」；无文字时不显示。点击后先转圈，约 0.8 秒后用模拟优化结果替换输入框内容。
+6. 输入框右下角显示当前模型名，默认 DeepSeek-V4.1-Flash。点击弹出模拟模型列表，可切换；选中项浅蓝背景并打钩。部分项带「限时折扣」。不做真实模型调用。
+7. 问 AI 页去掉标题旁的「企业知识工作台」，以及「今天想从哪里开始？」下的「提问、调用技能，或让 AI 直接完成一项工作。」保留「问 AI」标题与「今天想从哪里开始？」。介绍页原「企业知识工作台，可提问、调用技能并查看历史对话」做最小同步，改为「可提问、调用技能并查看历史对话」。
+8. 历史会话和新会话改为问 AI 内容区左侧抽屉，位于产品主侧栏右侧，不取代知识库主导航。抽屉顶部为「问 AI」+ 折叠，下面是「新会话」，再下面是按「近7天」「更早」分组且可搜索的历史列表；点条目进入会话。编辑名称、删除对话及既有确认框文案保留。默认历史标题仍彼此区分且完整可读。新建会话可用顶部「+」或抽屉里的「新会话」。折叠后仍可用「展开侧边栏」「展开历史记录」「新建会话」图标打开。进入会话后为左抽屉 + 右对话区。未加「定时任务」「技能广场」或标注图中被划掉的右上角按钮；旧的右上角「新对话」「历史」入口已由抽屉取代。
+
+介绍页最小同步
+- 「问 AI」条目说明由「企业知识工作台，可提问、调用技能并查看历史对话」改为「可提问、调用技能并查看历史对话」。
+- 未改介绍页其它模块、占位图或 OnlyOffice 说明。
+
+检索到但故意未改
+- 知识库权限、分类、授权弹窗与目录选择逻辑本身。
+- OnlyOffice「OnlyOffice 区域」蒙层：不属于问 AI。
+- 主侧栏置顶区业务与上次已对齐的图标尺寸。
+- src/App.jsx、src/AdminConsole.jsx 中的专家中心、专家管理、欢迎页浮动图标，以及管理后台模型表里与问 AI 页无关的「定时任务」字样。
+- 文档问 AI 仍使用原 DocumentCapabilityPicker / DocumentKnowledgePicker，未为其单独扩展问答/Agent、选模型、优化提示词或录音条。
+- 未增加历史置顶、分享、技能市场，也未加入「信息源」「定时任务」「技能广场」或 Workbuddy 角标。
+
+浏览器核对
+在本机 Vite（http://127.0.0.1:5176/knowledge-base-prototype/，未占用已冻结的 :5173，也未占用当时已被其他工作区占用的 :5174、:5175）用无头 Chrome（puppeteer-core + /usr/bin/google-chrome）走主路径。打开前清空 localStorage / sessionStorage。改前对照截取自基线工作树（同一 SHA，预览端口 :5177）。截图不在本仓库，保存在 /workspace/kb-ask-ai-eight-20261127-evidence/：
+- 00-ask-home-before.png
+- 00-ask-header-before.png
+- 00-ask-welcome-before.png
+- 00-ask-composer-before.png
+- 00-ask-history-before.png
+- 01-ask-home-after.png
+- 02-skill-cards-batch1.png
+- 02-skill-cards-batch2.png
+- 03-knowledge-mention-list.png
+- 03-knowledge-mention-list-page.png
+- 04-knowledge-more-initial.png
+- 04-knowledge-more-multi.png
+- 04-knowledge-more-selected-list.png
+- 05-composer-knowledge-tags.png
+- 05-ask-home-with-tags.png
+- 06-recording-bar.png
+- 06-recording-bar-page.png
+- 06-recording-stopped.png
+- 07-settings-qa.png
+- 07-settings-qa-page.png
+- 07-settings-agent.png
+- 07-settings-agent-page.png
+- 08-agent-attachments.png
+- 08-qa-attachments-cleared.png
+- 09-optimize-icon.png
+- 09-optimize-hover.png
+- 09-optimize-loading.png
+- 09-optimize-result.png
+- 10-model-list.png
+- 10-model-list-page.png
+- 10-model-selected.png
+- 11-drawer-expanded.png
+- 11-drawer-collapsed.png
+- 12-history-search.png
+- 13-conversation-view.png
+- 14-history-more-menu.png
+- 14-history-renamed.png
+- 15-history-delete-confirm.png
+- 15-history-deleted.png
+- 16-new-session-home.png
+
+页面核对还确认：产品主侧栏仍在，会话抽屉在其右侧且位于问 AI 内容区内；问 AI 页没有「企业知识工作台」「提问、调用技能，或让 AI 直接完成一项工作。」「定时任务」「技能广场」「信息源」或 Workbuddy 角标。
+
+未覆盖
+- 制作方自测不是独立验收，也未声称视觉验收通过。本次按快速预览安排，不安排独立验收。
+- 未覆盖真实多窗口并发、本机配额失败、真实录音设备，以及完整移动端视口矩阵。
+- 未发布 GitHub Pages，未合并 PR，未操作云效，未使用 Cursor 云端 Agent。

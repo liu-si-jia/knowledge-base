@@ -19,11 +19,11 @@ function MoreMenu({ item, onRename, onDelete, onClose }) {
   );
 }
 
-function HistoryRow({ item, menuFor, onOpen, onToggleMenu, onRename, onDelete, onCloseMenu, renaming, draft, setDraft, onCommitRename, onCancelRename }) {
+function HistoryRow({ item, active, menuFor, onOpen, onToggleMenu, onRename, onDelete, onCloseMenu, renaming, draft, setDraft, onCommitRename, onCancelRename }) {
   const input = useRef(null);
   useEffect(() => { if (renaming) input.current?.focus(); }, [renaming]);
   return (
-    <div className="ai-history-item">
+    <div className={`ai-history-item${active ? " is-active" : ""}`}>
       {renaming ? (
         <form className="ai-history-rename" onSubmit={(event) => { event.preventDefault(); onCommitRename(item); }}>
           <input
@@ -46,13 +46,15 @@ function HistoryRow({ item, menuFor, onOpen, onToggleMenu, onRename, onDelete, o
   );
 }
 
-export default function AskHistoryPanel({ items, now, onOpen, onRename, onDelete, onClose }) {
+export default function AskHistoryPanel({ items, now, onOpen, onRename, onDelete, onClose, variant = "panel", activeId = "", autoFocusSearch = false }) {
   const [query, setQuery] = useState('');
   const [menuFor, setMenuFor] = useState('');
   const [renamingId, setRenamingId] = useState('');
   const [draft, setDraft] = useState('');
   const [pendingDelete, setPendingDelete] = useState(null);
   const draftRef = useRef('');
+  const searchRef = useRef(null);
+  useEffect(() => { if (autoFocusSearch) searchRef.current?.focus(); }, [autoFocusSearch]);
   const visible = filterHistory(items, query);
   const grouped = groupHistory(visible, now);
   const startRename = (item) => { setRenamingId(item.id); setDraft(item.title); draftRef.current = item.title; setMenuFor(''); };
@@ -64,14 +66,18 @@ export default function AskHistoryPanel({ items, now, onOpen, onRename, onDelete
     if (title && title !== item.title) onRename(item.id, title);
   };
   return (
-    <section className="ai-history-panel" role="dialog" aria-label="历史对话">
-      <header>
-        <strong>历史对话</strong>
-        <button type="button" aria-label="关闭历史对话" onClick={onClose}><X size={15} /></button>
-      </header>
+    <section className={`ai-history-panel${variant === "drawer" ? " is-drawer" : ""}`} role="region" aria-label="历史对话">
+      {variant === "drawer" ? (
+        <strong className="ai-history-drawer-title">历史对话</strong>
+      ) : (
+        <header>
+          <strong>历史对话</strong>
+          <button type="button" aria-label="关闭历史对话" onClick={onClose}><X size={15} /></button>
+        </header>
+      )}
       <label className="ai-history-search">
         <MagnifyingGlass size={16} />
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索历史对话" aria-label="搜索历史对话" />
+        <input ref={searchRef} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索历史对话" aria-label="搜索历史对话" />
         {query && <button type="button" aria-label="清空搜索" onClick={() => setQuery('')}><X size={14} /></button>}
       </label>
       <div className="ai-history-body">
@@ -82,6 +88,7 @@ export default function AskHistoryPanel({ items, now, onOpen, onRename, onDelete
               <HistoryRow
                 key={item.id}
                 item={item}
+                active={activeId === item.id}
                 menuFor={menuFor}
                 onOpen={onOpen}
                 onToggleMenu={(id) => setMenuFor((current) => current === id ? '' : id)}
@@ -104,6 +111,7 @@ export default function AskHistoryPanel({ items, now, onOpen, onRename, onDelete
               <HistoryRow
                 key={item.id}
                 item={item}
+                active={activeId === item.id}
                 menuFor={menuFor}
                 onOpen={onOpen}
                 onToggleMenu={(id) => setMenuFor((current) => current === id ? '' : id)}
