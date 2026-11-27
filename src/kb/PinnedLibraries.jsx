@@ -12,7 +12,7 @@ export default function PinnedLibraries({state,userId,update,onOpen,onNotice}){
     const id=item.key,name=item.kind==='node'?item.node.name:item.library.name;
     return <div className={`pinned-library-row ${over===id?'drag-over':''}`} data-pin-id={id} key={id} draggable onDragStart={e=>{drag.current=id;e.dataTransfer.setData('text/plain',id);e.dataTransfer.effectAllowed='move';}} onDragEnd={()=>{drag.current='';setOver('');}} onDragOver={e=>{if(drag.current){e.preventDefault();setOver(id);}}} onDrop={e=>{e.preventDefault();const bounds=e.currentTarget.getBoundingClientRect();reorder(drag.current,id,e.clientY>bounds.top+bounds.height/2);drag.current='';setOver('');}} onKeyDown={e=>{if(!e.altKey||!['ArrowUp','ArrowDown'].includes(e.key))return;const next=index+(e.key==='ArrowUp'?-1:1);e.preventDefault();if(items[next])reorder(id,items[next].key,e.key==='ArrowDown');}}>
       <button type="button" className="pin-drag-handle" aria-label={`调整置顶顺序 ${name}`} title="拖拽排序，或按 Alt＋↑/↓"><DotsSixVertical size={14}/></button>
-      <button type="button" className="pinned-library-open" onClick={()=>open(item)}>{item.kind==='node'?<ContentIcon node={item.node} size={23}/>:<LibraryIcon library={item.library} size={23}/>}<span title={name}>{name}</span></button>
+      <button type="button" className="pinned-library-open" onClick={()=>open(item)}>{item.kind==='node'?<ContentIcon node={item.node} size={15} className="pinned-item-icon"/>:<LibraryIcon library={item.library} size={23}/>}<span title={name}>{name}</span></button>
       <button type="button" className="pin-remove" aria-label={`取消置顶 ${name}`} onClick={()=>unpin(item)}><X size={13}/></button>
     </div>;
   })}{!items.length&&<p className="empty-pins">点击知识库卡片的图钉，或在文件、文件夹的更多操作中置顶</p>}</div>;

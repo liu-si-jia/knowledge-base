@@ -60,3 +60,13 @@
 .library-category-filter label:has(input:focus-visible){outline:2px solid #79a6ee;outline-offset:2px}
 .library-wide-card .library-card-categories{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-content:flex-start;gap:4px;max-height:40px;margin:10px 0 0;overflow:hidden}
 .library-wide-card .library-card-categories>[role=listitem]{max-width:100%;overflow:hidden;padding:0 6px;border:1px solid rgba(44,62,80,.16);border-radius:4px;background:rgba(255,255,255,.88);color:#24384c;font-size:10px;line-height:18px;text-overflow:ellipsis;white-space:nowrap}
+
+.knowledge-product .pinned-library-open .content-type-icon,
+.knowledge-product .pinned-library-open .library-icon-visual{
+  width:23px;
+  height:23px;
+  flex:0 0 23px;
+  box-sizing:border-box;
+}
+.knowledge-product .pinned-library-open .library-icon-visual{border-radius:6px}
+

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Books, CaretDown, CaretRight, Check, FileText, Folder, FolderOpen, MagnifyingGlass, Sparkle, UserCircle, X } from '@phosphor-icons/react';
-import { AI_SKILLS, AI_EXPERTS } from './aiCatalog.js';
+import { Books, CaretDown, Check, FileText, Folder, FolderOpen, MagnifyingGlass, Sparkle, X } from '@phosphor-icons/react';
+import { AI_SKILLS } from './aiCatalog.js';
 import { actualNodes, contentRights, contentTree, librariesForView, projectedEntries, libraryType } from './access.js';
 import { loadState } from './store.js';
 import { folderTrail } from './contentCreation.js';
@@ -29,20 +29,17 @@ function usePopover(open,onClose,kind){
   return {root,menu,trigger,position,compact};
 }
 
-export function DocumentCapabilityPicker({expert,onExpertChange,onSkillSelect}){
-  const [open,setOpen]=useState(false),[category,setCategory]=useState('专家'),[query,setQuery]=useState(''),search=useRef(null);
-  const popup=usePopover(open,()=>setOpen(false),'capability'),catalog=category==='专家'?AI_EXPERTS:AI_SKILLS;
-  const options=catalog.filter(([name,description])=>`${name}${description}`.toLowerCase().includes(query.trim().toLowerCase()));
-  useEffect(()=>{if(open)requestAnimationFrame(()=>search.current?.focus({preventScroll:true}));},[open,category]);
-  const choose=name=>{if(category==='专家')onExpertChange(expert===name?'':name);else onSkillSelect(name);setOpen(false);};
-  const changeCategory=label=>{if(category!==label){setCategory(label);setQuery('');}};
-  return <div ref={popup.root} className="capability-picker doc-capability-picker"><div className={`capability-trigger-shell ${expert?'has-selection':''}`}>
-    <button ref={popup.trigger} type="button" className={`capability-trigger ${open||expert?'active':''}`} aria-label={expert?`专家：${expert}`:'调用技能或专家'} title={expert||'技能 / 专家'} aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(!open)}>{expert?<UserCircle size={18}/>:<Sparkle size={18}/>}<span>{expert||'技能 / 专家'}</span>{!expert&&<CaretDown className="capability-caret" size={12}/>}</button>
-    {expert&&<button type="button" className="capability-clear" aria-label="移除已选专家" onClick={()=>{onExpertChange('');setOpen(false);}}><X size={11}/></button>}
-  </div>{open&&createPortal(<div ref={popup.menu} className={`doc-ai-flyout ${popup.compact?'is-compact':''}`} style={popup.position} role="dialog" aria-label="调用技能或专家">
-    <nav className="doc-capability-categories" aria-label="能力分类">{['专家','技能'].map(label=><button type="button" className={category===label?'active':''} key={label} onPointerEnter={()=>changeCategory(label)} onClick={()=>changeCategory(label)}>{label==='专家'?<UserCircle size={17}/>:<Sparkle size={17}/>}<span>{label}</span><CaretRight size={13}/></button>)}</nav>
-    <div className="doc-capability-options"><label className="doc-capability-search"><MagnifyingGlass size={15}/><input ref={search} aria-label={`搜索${category}`} placeholder={`搜索${category}`} value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.nativeEvent.isComposing&&options.length){e.preventDefault();choose(options[0][0]);}}}/></label>
-      <div className="doc-capability-list">{options.map(([name,description])=><button type="button" className={category==='专家'&&expert===name?'selected':''} key={name} onClick={()=>choose(name)}><span className="doc-capability-icon">{category==='专家'?<UserCircle size={18}/>:<Sparkle size={18}/>}</span><span><strong>{name}</strong><small>{description}</small></span>{category==='专家'&&expert===name&&<Check size={15}/>}</button>)}{!options.length&&<p className="doc-picker-empty">没有匹配的{category}</p>}</div>
+export function DocumentCapabilityPicker({onSkillSelect}){
+  const [open,setOpen]=useState(false),[query,setQuery]=useState(''),search=useRef(null);
+  const popup=usePopover(open,()=>setOpen(false),'capability');
+  const options=AI_SKILLS.filter(([name,description])=>`${name}${description}`.toLowerCase().includes(query.trim().toLowerCase()));
+  useEffect(()=>{if(open)requestAnimationFrame(()=>search.current?.focus({preventScroll:true}));},[open]);
+  const choose=name=>{onSkillSelect(name);setOpen(false);setQuery('');};
+  return <div ref={popup.root} className="capability-picker doc-capability-picker"><div className="capability-trigger-shell">
+    <button ref={popup.trigger} type="button" className={`capability-trigger ${open?'active':''}`} aria-label="技能" title="技能" aria-haspopup="dialog" aria-expanded={open} onClick={()=>setOpen(!open)}><Sparkle size={18}/><span>技能</span><CaretDown className="capability-caret" size={12}/></button>
+  </div>{open&&createPortal(<div ref={popup.menu} className={`doc-ai-flyout ${popup.compact?'is-compact':''}`} style={popup.position} role="dialog" aria-label="技能">
+    <div className="doc-capability-options"><label className="doc-capability-search"><MagnifyingGlass size={15}/><input ref={search} aria-label="搜索技能" placeholder="搜索技能" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'&&!e.nativeEvent.isComposing&&options.length){e.preventDefault();choose(options[0][0]);}}}/></label>
+      <div className="doc-capability-list">{options.map(([name,description])=><button type="button" key={name} onClick={()=>choose(name)}><span className="doc-capability-icon"><Sparkle size={18}/></span><span><strong>{name}</strong><small>{description}</small></span></button>)}{!options.length&&<p className="doc-picker-empty">没有匹配的技能</p>}</div>
     </div>
   </div>,document.body)}</div>;
 }

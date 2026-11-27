@@ -1,0 +1,81 @@
+按确认项改问AI展示与交互，并统一侧栏置顶图标 · 制作方功能回归
+日期：2026-11-27（Asia/Shanghai）
+性质：制作方自测，不是独立验收，不代表验收通过。请勿合并、不要发 Pages、不要操作云效。
+基线：a8ee6e81065f7c72ac6597f46e934a691c31adb7（GitHub main）
+分支：local/ask-ai-six-updates
+工作区：/workspace/kb-ask-ai-20261127-8fe4edee
+性质说明：可点击原型，仅模拟数据。禁止使用 Cursor 云端 Agent，改动在盒子本地完成。范围是已确认的 6 项问 AI 展示与交互，外加后来并入同一 PR 的第 7 项（置顶区图标视觉尺寸统一）。未改知识库权限、分类等无关能力，也未新增置顶/分享等图中没有的历史能力。
+
+命令与计数
+1. node --test src/kb/askHistory.test.mjs src/kb/askAiUpdates.test.mjs
+   结果：通过 7，失败 0。含历史分组/搜索/重命名/删除单元测试，技能目录对齐，以及 jsdom 挂载后的 4 项界面用例（去蒙层与专家入口、历史交互、技能窗口、文档问AI只保留技能）。
+2. node --test src/kb/*.test.mjs
+   结果：通过 186，失败 0，取消 0，跳过 0。
+   相对上次已知基线 179 项新增 7 项，并回归既有权限、分类、所有者列表、回收站搜索、分享移除与编辑顶栏等用例。
+   汇总行：tests 186 / suites 7 / pass 186 / fail 0 / skipped 0。
+
+7 项落地说明
+1. 去掉问 AI 页右侧/右上角浮动机器人图标（composer-mascot / workbuddy-cat-mascot.png）。问 AI 首页改后不再渲染该图标；回答区「知识库助手」品牌图标保留，不是该浮动图标。
+2. 去掉问 AI「一期暂不开发」蒙层。AskPage 不再挂载 OverlayNotice；进入问 AI 即可直接操作。OnlyOffice 编辑区蒙层未改。sessionOverlay 仍保留 ASK_AI_OVERLAY_KEY，仅用于清理本机旧会话标记，不再弹出界面。
+3. 问 AI 范围内去掉全部「专家」相关入口、选项、文案和专家模式。输入区由「技能 / 专家」改为「技能」；“/”只调用技能；文档问 AI 能力选择器同步只保留技能。未改管理后台「专家管理」、未使用的旧 App.jsx 专家中心，以及与问 AI 无关的文案。
+4. 历史对话改为可点原型：默认模拟数据按「近7天」「更早」分组，标题彼此区分且完整可读，不再截成 22 字或保留无意义重复。支持顶部搜索实时过滤；条目更多菜单仅有「编辑名称」「删除对话」；重命名写回列表；删除前使用现有确认框风格，说明为「这条对话将从历史中移除。」；点击条目进入该会话。
+5. 去掉问 AI 首页「试试这样问」建议标签。上方四张能力卡片（知识问答、帮我写作、数据分析、会议纪要）保留。
+6. 「/ 技能」窗口按标注样式：顶部「搜索技能」；列表为彩色图标 + 标题 + 「内置」标签 + 一行描述；底部「探索更多技能」可点，打开一个简单的更多技能列表（帮我写作、知识总结、数据分析、会议纪要），不是可上架的技能市场后台。
+7. 侧栏置顶区图标视觉尺寸对齐为 23×23。根因是同一 size={23} 下，LibraryIcon 外框为 23px，ContentIcon 外框为 size+8=31px，文件/文件夹显得更大。现仅在置顶列表把内容图标外框与知识库图标对齐；置顶/取消置顶、排序、点击进入等行为未改。未改其他侧栏或内容列表的图标规格。
+
+介绍页最小同步
+- 「问 AI」条目说明由「主入口一期暂不开发…」改为「企业知识工作台，可提问、调用技能并查看历史对话」。
+- 原型占位示意图去掉问 AI「一期暂不开发」标签，并同步无障碍说明。OnlyOffice 占位与「继续查看」说明保留。
+
+检索到但故意未改
+- OnlyOffice「OnlyOffice 区域」蒙层：不属于问 AI，且仍是编辑占位提示。
+- sessionOverlay 中的 ASK_AI_OVERLAY_KEY 及相应单测：只保留存储清理能力，界面已不再使用。
+- src/App.jsx、src/AdminConsole.jsx 中的专家中心、专家管理和欢迎页浮动图标：不是当前入口 KnowledgeApp 的问 AI 工作台，属于无关模块，按「不要误删其他模块里与问 AI 无关的专家字样」未改。
+- 回答区 Robot 品牌图标、文档问 AI 空状态图标：不是用户标注要去掉的浮动机器人。
+- 未增加历史置顶、分享等图中没有的能力。
+
+浏览器核对
+在本机 Vite（http://127.0.0.1:5175/knowledge-base-prototype/，未占用已冻结的 :5173，也未占用当时已被其他工作区占用的 :5174）用无头 Chrome（puppeteer-core + /usr/bin/google-chrome）走主路径。打开前清空 sessionStorage；为展示置顶区文件/文件夹与知识库图标对比，在截图会话中向本地演示数据追加了「功能说明」文件夹和「报销需要哪些材料」文件的置顶，未改产品默认置顶规则。截图不在本仓库，保存在：
+- /workspace/kb-ask-ai-20261127-evidence/01-ask-overlay-before.png
+- /workspace/kb-ask-ai-20261127-evidence/01-ask-overlay-page-before.png
+- /workspace/kb-ask-ai-20261127-evidence/01-ask-overlay-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/02-ask-home-page-before.png
+- /workspace/kb-ask-ai-20261127-evidence/02-ask-home-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/02-ask-mascot-before.png
+- /workspace/kb-ask-ai-20261127-evidence/02-ask-mascot-after.png
+- /workspace/kb-ask-ai-20261127-evidence/03-ask-suggested-before.png
+- /workspace/kb-ask-ai-20261127-evidence/03-ask-suggested-after.png
+- /workspace/kb-ask-ai-20261127-evidence/04-ask-composer-skills-before.png
+- /workspace/kb-ask-ai-20261127-evidence/04-ask-composer-skills-after.png
+- /workspace/kb-ask-ai-20261127-evidence/05-pinned-icons-before.png
+- /workspace/kb-ask-ai-20261127-evidence/05-pinned-icons-page-before.png
+- /workspace/kb-ask-ai-20261127-evidence/05-pinned-icons-after.png
+- /workspace/kb-ask-ai-20261127-evidence/06-skill-window-before.png
+- /workspace/kb-ask-ai-20261127-evidence/06-skill-window-page-before.png
+- /workspace/kb-ask-ai-20261127-evidence/06-skill-window-after.png
+- /workspace/kb-ask-ai-20261127-evidence/06-skill-window-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/06b-explore-more-skills-after.png
+- /workspace/kb-ask-ai-20261127-evidence/06b-explore-more-skills-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/07-history-panel-before.png
+- /workspace/kb-ask-ai-20261127-evidence/07-history-panel-page-before.png
+- /workspace/kb-ask-ai-20261127-evidence/07-history-panel-after.png
+- /workspace/kb-ask-ai-20261127-evidence/07-history-panel-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/07b-history-open-item-page-before.png
+- /workspace/kb-ask-ai-20261127-evidence/08-history-search-match-after.png
+- /workspace/kb-ask-ai-20261127-evidence/08-history-search-match-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/08b-history-search-empty-after.png
+- /workspace/kb-ask-ai-20261127-evidence/08b-history-search-empty-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09-history-more-menu-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09-history-more-menu-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09b-history-renamed-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09b-history-renamed-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09c-history-delete-confirm-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09c-history-delete-confirm-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09d-history-deleted-after.png
+- /workspace/kb-ask-ai-20261127-evidence/09d-history-deleted-page-after.png
+- /workspace/kb-ask-ai-20261127-evidence/10-history-open-conversation-page-after.png
+
+未覆盖
+- 制作方自测不是独立验收，也未声称视觉验收通过。本次按快速预览安排，不安排独立验收。
+- 未覆盖真实多窗口并发、本机配额失败，以及完整移动端视口矩阵。
+- 未发布 GitHub Pages，未合并 PR，未操作云效。

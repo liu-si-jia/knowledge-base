@@ -29,7 +29,8 @@ import HomeDisplaySettings from './HomeDisplaySettings.jsx';
 import { homeColumns } from './homeDisplay.js';
 import { homeEntries, recentVisits, visitContent, toggleNodePin, isContentPinned } from './personalization.js';
 import OverlayNotice from './OverlayNotice.jsx';
-import { ASK_AI_OVERLAY_KEY, ONLYOFFICE_OVERLAY_KEY } from './sessionOverlay.js';
+import { ONLYOFFICE_OVERLAY_KEY } from './sessionOverlay.js';
+import AskPage from './AskPage.jsx';
 import './refinements.css';
 import { useLocationDialog } from './LocationPicker.jsx';
 import { actionReason, favorites, setFavorite, batchPreflight, performBatch, sourceLocations } from './fileActions.js';
@@ -48,7 +49,6 @@ import SimpleContentEditor from "./SimpleContentEditor.jsx";
 import { useDocumentPanel, documentOutline, documentSections, scrollDocumentSection } from './documentInteractions.js';
 import { DocumentCapabilityPicker, DocumentKnowledgePicker, knowledgePool, availableKnowledgeSelection } from './DocumentAIControls.jsx';
 import DocumentSelectionToolbar from './DocumentSelectionToolbar.jsx';
-import { AI_SKILLS, AI_EXPERTS } from './aiCatalog.js';
 import './documentInteractions.css';
 import { LibraryPage, SpaceDetail } from "./LibraryViews.jsx";
 import RelocateDialog from "./RelocateDialog.jsx";
@@ -322,7 +322,7 @@ export function KnowledgeApp() {
       </aside>}
       <div className={`knowledge-page${detailAiOpen && isDetail ? " detail-ai-open" : ""}`}>
         {location.path === "home" && <HomePage state={state} userId={userId} query={query} onOpen={openDoc} update={update} startUpload={startUpload} onCreateLibrary={()=>setLibraryDialog(true)} startCreate={startCreate} openRelocate={openRelocate} onAction={fileAction} />}
-        {location.path === "ask" && <div className="ask-page-frame"><AskPage state={state} userId={userId} onOpen={openDoc} /><OverlayNotice storageKey={ASK_AI_OVERLAY_KEY} title="一期暂不开发" className="ask-ai-overlay"/></div>}
+        {location.path === "ask" && <div className="ask-page-frame"><AskPage state={state} userId={userId} onOpen={openDoc} mockAnswer={mockAnswer} answerAllowed={answerAllowed} /></div>}
         {isLibrary && <LibraryPage state={state} userId={userId} section={section} startCreate={startCreate} startUpload={startUpload} onCreateLibrary={() => setLibraryDialog(true)} update={update} openSettings={openSettings} say={say} />}
         {isDetail && <SpaceDetail state={state} userId={userId} space={space} query={query} folderPath={folderPath} menuFor={menuFor} setMenuFor={setMenuFor} detailAiOpen={detailAiOpen} setDetailAiOpen={setDetailAiOpen} openSettings={openSettings} onAction={fileAction} onBatch={batchAction} locateId={location.locate} origin={location.view} startCreate={startCreate} startUpload={startUpload} folderDraft={folderDraft} onCloseFolder={()=>setFolderDraft(null)} onFolderCreated={node=>say(`已创建文件夹「${node.name}」`)} openDoc={openDoc} openRelocate={openRelocate} say={say} setConfirm={setConfirm} update={update} />}
         {location.path === "recycle" && <RecyclePage state={state} userId={userId} update={update} setConfirm={setConfirm} say={say} />}
@@ -412,60 +412,6 @@ function SpaceAiDrawer({ state, userId, space, targetId, onOpen, onClose,open=tr
   </aside>;
 }
 
-function AskPage({ state, userId, onOpen }) {
-  const spaces = visibleSpaces(state, userId);
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
-  const [skills, setSkills] = useState([]);
-  const [knowledge, setKnowledge] = useState([]);
-  const availableKnowledge=spaces.map(s=>s.id).join('|');
-  useEffect(()=>{setKnowledge(ids=>ids.filter(id=>spaces.some(s=>s.id===id)));},[availableKnowledge,userId]);
-  const [expert, setExpert] = useState("");
-  const [webSearch, setWebSearch] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [attachments, setAttachments] = useState([]);
-  const [picker, setPicker] = useState("");
-  const [capabilityTab, setCapabilityTab] = useState("skills");
-  const [history, setHistory] = useState([]);
-  const [notice, setNotice] = useState("");
-  const pool = visibleNodes(state, userId).filter((node) => node.type === "doc" && (!knowledge.length || knowledge.includes(node.spaceId)));
-  const submit = (given) => {
-    const question = (given ?? message).replace(/[\/@]$/, "").trim();
-    if (!question) return;
-    const answer = mockAnswer(state, userId, pool, question);
-    const task = skills.length ? { title: skills[0], status: "已完成", output: skills[0] === "会议纪要" ? "已生成会议结论、待办和负责人。" : `已基于 ${knowledge.length ? knowledge.map(id => state.spaces.find(s => s.id === id)?.name || "不可访问知识").join("、") : "全部可见知识"} 生成可继续编辑的结果。` } : null;
-    const entry = { id: Date.now(), question, answer, task, skills: [...skills], knowledge: [...knowledge], expert, webSearch };
-    setMessages((current) => [...current, entry]);
-    setHistory((current) => [{ id: entry.id, title: question.slice(0, 22), count: current.length + 1 }, ...current].slice(0, 6));
-    setMessage(""); setPicker("");
-  };
-  const chooseSkill = (name) => { setSkills((current) => current.includes(name) ? current : [...current, name]); setPicker(""); setMessage((current) => current.replace(/\/[^\s]*$/, "")); };
-  const chooseKnowledge = (name) => { setKnowledge((current) => current.includes(name) ? current : [...current, name]); setPicker(""); setMessage((current) => current.replace(/@[^\s]*$/, "")); };
-  const onMessageChange = (value) => { setMessage(value); const trigger = value.match(/([/@])[^\s]*$/)?.[1]; setPicker(trigger === "/" ? "slash" : trigger === "@" ? "knowledge" : ""); };
-  const toggleVoice = () => { if (recording) { setRecording(false); setMessage((value) => `${value}${value ? " " : ""}请根据当前知识整理三条可执行建议。`); setNotice("已完成语音转写"); } else { setRecording(true); setNotice("正在录音 00:00，再次点击结束"); } };
-  const runTemplate = (name) => { setSkills((current) => current.includes(name) ? current : [...current, name]); setMessage(name === "数据分析" ? "请分析当前知识中的关键数据、风险和建议。" : `请使用${name}处理当前知识。`); };
-  return <section className={`knowledge-ai-workspace ai-workbench${messages.length ? " has-thread" : ""}`}>
-    <header className="ai-workbench-header"><div><Sparkle size={20} weight="fill" /><h1>问AI</h1><span>企业知识工作台</span></div><div><button type="button" onClick={() => { setMessages([]); setMessage(""); }}>新对话</button><button type="button" className={history.length ? "active" : ""} onClick={() => setPicker(picker === "history" ? "" : "history")}><Clock size={17} />历史</button></div></header>
-    {picker === "history" && <section className="ai-history-popover"><strong>最近对话</strong>{history.length ? history.map((item) => <button key={item.id} type="button" onClick={() => setNotice(`已定位到「${item.title}」`)}>{item.title}<small>{item.count} 条消息</small></button>) : <p>还没有历史对话</p>}</section>}
-    {!messages.length && <div className="ai-welcome"><div className="greeting"><p>企业知识助手</p><h2>今天想从哪里开始？</h2><span>提问、调用技能，或让 AI 直接完成一项工作。</span></div><div className="ai-template-grid">{[["知识问答", "快速查找制度、流程与项目资料", FileText], ["帮我写作", "基于企业知识起草内容", PencilLine], ["数据分析", "总结指标、风险和行动建议", ChartBar], ["会议纪要", "沉淀结论并生成待办", Briefcase]].map(([name, description, Icon]) => <button key={name} type="button" onClick={() => runTemplate(name)}><Icon size={20} weight="fill" /><strong>{name}</strong><span>{description}</span><CaretRight size={16} /></button>)}</div><div className="ai-suggested"><span>试试这样问</span>{["报销需要哪些材料", "知识库怎么授权", "帮我总结近期需要处理的事项"].map((item) => <button type="button" key={item} onClick={() => submit(item)}>{item}</button>)}</div><div className="composer-mascot" aria-hidden="true"><img src={publicAsset("/workbuddy-cat-mascot.png")} alt="" /></div></div>}
-    {!!messages.length && <main className="ai-thread" aria-live="polite">{messages.map((item) => <article key={item.id} className="ai-turn"><div className="knowledge-ai-user">{item.question}</div><div className="ai-answer-card"><div className="answer-brand"><span><Robot size={18} /></span><div><strong>{item.expert || "知识库助手"}</strong><small>{item.knowledge.length ? `已引用 ${item.knowledge.map(id => state.spaces.find(s => s.id === id)?.name || "不可访问知识").join("、")}` : "已检索全部可见知识"}{item.webSearch ? " · 已开启联网搜索" : ""}</small></div></div><p>{answerAllowed(state, userId, item.answer) ? item.answer.text : "来源权限已变化，此回答暂不可查看。"}</p>{item.task && <div className="ai-task-result"><span>任务结果</span><strong>{item.task.title}</strong><em>{item.task.status}</em><p>{item.task.output}</p><button type="button" onClick={() => setNotice("结果已保存到本次对话，可继续编辑或引用。")}>查看结果</button></div>}<div className="kb-citations">{item.answer.citations.filter(cite => can(nodeRole(state, state.nodes.find(n => n.id === cite.id), userId), "view")).map((cite) => <button key={cite.id} type="button" onClick={() => onOpen(cite.id)}><FileText size={14} />{cite.name}</button>)}</div><footer><button type="button" onClick={() => setNotice("回答已复制")}>复制</button><button type="button" onClick={() => setMessage(`请继续展开：${item.question}`)}>继续追问</button><button type="button" onClick={() => setNotice("已收到反馈")}>有帮助</button></footer></div></article>)}</main>}
-    <AIComposer {...{ message, onMessageChange, submit, skills, setSkills, knowledge, setKnowledge, expert, setExpert, webSearch, setWebSearch, recording, toggleVoice, attachments, setAttachments, picker, setPicker, capabilityTab, setCapabilityTab, spaces, chooseSkill, chooseKnowledge, stateName: id => state.spaces.find(s => s.id === id)?.name || "不可访问知识" }} />
-    <p className="knowledge-ai-disclaimer">回答基于当前身份可见的知识生成；重要内容请核实来源。</p>{notice && <div className="knowledge-product-toast" role="status">{notice}<button type="button" onClick={() => setNotice("")}>知道了</button></div>}
-  </section>;
-}
-
-function AIComposer({ message, onMessageChange, submit, skills, setSkills, knowledge, setKnowledge, expert, setExpert, webSearch, setWebSearch, recording, toggleVoice, attachments, setAttachments, picker, setPicker, capabilityTab, setCapabilityTab, spaces, chooseSkill, chooseKnowledge, stateName }) {
-  const all = capabilityTab === "skills" ? AI_SKILLS : AI_EXPERTS;
-  return <div className={`knowledge-ai-composer ai-composer${skills.length || knowledge.length || attachments.length ? " has-chips" : ""}`}>
-    <div className="ai-composer-chips">{skills.map((item) => <span className="composer-skill-chip" key={item}><Sparkle size={13} weight="fill" />{item}<button type="button" aria-label={`移除技能${item}`} onClick={() => setSkills((current) => current.filter((value) => value !== item))}><X size={11} /></button></span>)}{knowledge.map((item) => <span className="composer-skill-chip knowledge-chip" key={item}><Books size={13} weight="fill" />{stateName(item)}<button type="button" aria-label={`移除知识${item}`} onClick={() => setKnowledge((current) => current.filter((value) => value !== item))}><X size={11} /></button></span>)}{attachments.map((item) => <span className="composer-skill-chip attachment-chip" key={item.name}><FileText size={13} />{item.name}<button type="button" aria-label={`移除附件${item.name}`} onClick={() => setAttachments((current) => current.filter((value) => value.name !== item.name))}><X size={11} /></button></span>)}</div>
-    {picker === "slash" && <section className="ai-inline-picker slash-picker"><header><strong>调用技能或专家</strong><button onClick={() => setPicker("")}><X size={15} /></button></header><div className="ai-picker-tabs"><button className={capabilityTab === "skills" ? "active" : ""} onClick={() => setCapabilityTab("skills")}>技能</button><button className={capabilityTab === "experts" ? "active" : ""} onClick={() => setCapabilityTab("experts")}>专家</button></div>{all.map(([name, description]) => <button className="ai-picker-row" key={name} onClick={() => capabilityTab === "skills" ? chooseSkill(name) : (setExpert(name), setPicker(""))}><Sparkle size={16} /><span><strong>{name}</strong><small>{description}</small></span>{capabilityTab === "skills" && <Plus size={16} />}</button>)}<footer><button onClick={() => setPicker("capability")}>浏览全部能力 <CaretRight size={14} /></button></footer></section>}
-    {(picker === "knowledge" || picker === "knowledge-center") && <section className="ai-inline-picker knowledge-picker"><header><strong>{picker === "knowledge-center" ? "从知识中心选择" : "指定知识"}</strong><button onClick={() => setPicker("")}><X size={15} /></button></header><p>{picker === "knowledge-center" ? "可多选知识库；选择后会作为本次对话的可追溯上下文。" : "选择后仅在对应知识范围内检索和引用。"}</p>{spaces.map((space) => <button className="ai-picker-row" key={space.id} onClick={() => chooseKnowledge(space.id)}><BookBookmark size={16} /><span><strong>{space.name}</strong><small>{space.description}</small></span>{knowledge.includes(space.id) ? <CheckSquare size={16} /> : <Plus size={16} />}</button>)}<footer>{picker === "knowledge" ? <button onClick={() => setPicker("knowledge-center")}>从知识中心选择更多 <CaretRight size={14} /></button> : <button onClick={() => setPicker("")}>完成选择 <CheckSquare size={14} /></button>}</footer></section>}
-    {picker === "capability" && <section className="ai-inline-picker capability-picker"><header><strong>能力中心</strong><button onClick={() => setPicker("")}><X size={15} /></button></header><div className="ai-picker-tabs"><button className={capabilityTab === "skills" ? "active" : ""} onClick={() => setCapabilityTab("skills")}>技能</button><button className={capabilityTab === "experts" ? "active" : ""} onClick={() => setCapabilityTab("experts")}>专家</button></div>{all.map(([name, description]) => <button className="ai-picker-row" key={name} onClick={() => capabilityTab === "skills" ? chooseSkill(name) : (setExpert(name), setPicker(""))}><Sparkle size={16} /><span><strong>{name}</strong><small>{description}</small></span></button>)}</section>}
-    <textarea value={message} onChange={(event) => onMessageChange(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") setPicker(""); if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); if (picker === "slash") chooseSkill(AI_SKILLS[0][0]); else if (picker === "knowledge" && spaces[0]) chooseKnowledge(spaces[0].id); else submit(); } }} placeholder="输入问题；“/”调用技能或专家，“@”指定知识" />
-    <div className="ai-composer-bottom"><div className="ai-composer-controls"><button className={expert ? "selected" : ""} type="button" onClick={() => setPicker("capability")}><Sparkle size={16} />{expert || "技能 / 专家"}<CaretDown size={13} /></button><button className={knowledge.length ? "selected" : ""} type="button" onClick={() => setPicker("knowledge")}><Books size={16} />{knowledge.length ? `${knowledge.length} 个知识` : "知识"}<CaretDown size={13} /></button></div><div className="send-tools"><label className="ai-attachment" title="添加附件"><UploadSimple size={19} /><input type="file" onChange={(event) => { const file = event.target.files?.[0]; if (file) setAttachments((current) => [...current, file]); event.target.value = ""; }} /></label><button className={webSearch ? "web-search active" : "web-search"} type="button" aria-label="联网搜索" aria-pressed={webSearch} onClick={() => setWebSearch((value) => !value)}><Globe size={20} /></button><i /><button className={recording ? "voice-input active" : "voice-input"} type="button" aria-label={recording ? "停止语音输入" : "开始语音输入"} onClick={toggleVoice}><Microphone size={20} /></button><button className="send" aria-label="发送" onClick={() => submit()}><ArrowUp size={21} weight="bold" /></button></div></div>
-  </div>;
-}
-
 function RecyclePage({state,userId,update,setConfirm,say}){
   const [error,setError]=useState(''),[restoring,setRestoring]=useState(''),[search,setSearch]=useState('');
   useEffect(()=>{setRestoring('');setError('');setSearch('');},[userId]);
@@ -517,7 +463,7 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
   const [aiOpen, setAiOpen] = useState(true);
   const [question, setQuestion] = useState("");
   const [knowledge,setKnowledge]=useState({mode:'doc',items:[]});
-  const [documentSkills,setDocumentSkills]=useState([]),[documentExpert,setDocumentExpert]=useState(''),[documentAttachments,setDocumentAttachments]=useState([]),[selectedQuote,setSelectedQuote]=useState(null),[selectionToolbar,setSelectionToolbar]=useState(null),[overviewOpen,setOverviewOpen]=useState(true),[outlineActive,setOutlineActive]=useState('doc-body'),[activeSlide,setActiveSlide]=useState(0);
+  const [documentSkills,setDocumentSkills]=useState([]),[documentAttachments,setDocumentAttachments]=useState([]),[selectedQuote,setSelectedQuote]=useState(null),[selectionToolbar,setSelectionToolbar]=useState(null),[overviewOpen,setOverviewOpen]=useState(true),[outlineActive,setOutlineActive]=useState('doc-body'),[activeSlide,setActiveSlide]=useState(0);
   const panel=useDocumentPanel(nodeId,role.view&&aiOpen);
   const bodyElement=useRef(null);
   const [messages, setMessages] = useState([]);
@@ -544,7 +490,7 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
   },[editing,draft,nodeId,userId,role.view,isNewDraft]);
   useEffect(() => { if (!editing) { setDraft(node?.body || ""); baseBody.current = node?.body || ""; } }, [node?.body, editing]);
   useEffect(() => { const guard = event => { if (editing && (isNewDraft||draft !== baseBody.current)) { event.preventDefault(); event.returnValue = ""; } }; window.addEventListener("beforeunload", guard); return () => window.removeEventListener("beforeunload", guard); }, [editing, draft,isNewDraft]);
-  useEffect(()=>{setKnowledge({mode:'doc',items:[]});setDocumentSkills([]);setDocumentExpert('');setDocumentAttachments([]);setSelectedQuote(null);setSelectionToolbar(null);setOverviewOpen(true);setOutlineActive('doc-body');setActiveSlide(0);setQuestion('');setMessages([]);},[nodeId,userId]);
+  useEffect(()=>{setKnowledge({mode:'doc',items:[]});setDocumentSkills([]);setDocumentAttachments([]);setSelectedQuote(null);setSelectionToolbar(null);setOverviewOpen(true);setOutlineActive('doc-body');setActiveSlide(0);setQuestion('');setMessages([]);},[nodeId,userId]);
   useEffect(()=>{
     setKnowledge(current=>{if(current.mode!=='selection')return current;const valid=availableKnowledgeSelection(state,userId,current.items);return valid.length===current.items.length?current:{mode:'selection',items:valid};});
     if(!role.view){setSelectedQuote(null);setSelectionToolbar(null);}
@@ -597,9 +543,9 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
     const pool=knowledgePool(latest,userId,current,knowledge);
     if(selectedQuote&&!pool.some(n=>n.id===node.id))pool.unshift(current);
     const answer=selectedQuote&&documentSkills.includes('帮我写作')&&/改写|润色|重写|优化|写作/.test(text)?{text:`模拟改写建议（原型演示）：\n${selectedQuote.text.trim().replace(/。(?=\S)/g,'。\n')}\n\n可继续补充目标语气、篇幅和使用场景。`,citations:[{id:current.id,name:current.name}]}:mockAnswer(latest,userId,pool,text,current);
-    setMessages(items=>[...items,{question:text,quote:selectedQuote?.text||'',skills:[...documentSkills],expert:documentExpert,attachments:documentAttachments.map(file=>file.name),answer}]);setQuestion('');setSelectionToolbar(null);setAiOpen(true);
+    setMessages(items=>[...items,{question:text,quote:selectedQuote?.text||'',skills:[...documentSkills],attachments:documentAttachments.map(file=>file.name),answer}]);setQuestion('');setSelectionToolbar(null);setAiOpen(true);
   };
-  const freshConversation=()=>{setMessages([]);setQuestion('');setSelectedQuote(null);setSelectionToolbar(null);setDocumentSkills([]);setDocumentExpert('');setDocumentAttachments([]);setKnowledge({mode:'doc',items:[]});};
+  const freshConversation=()=>{setMessages([]);setQuestion('');setSelectedQuote(null);setSelectionToolbar(null);setDocumentSkills([]);setDocumentAttachments([]);setKnowledge({mode:'doc',items:[]});};
   const plainText = contentText(node, editing ? draft : node.body);
   const paragraphs=plainText.split(/\r?\n/).filter(line=>line.trim());
   const outline=documentOutline(node,editing?draft:node.body||'').filter(item=>!editing||!item.id.startsWith('doc-section-')),sections=documentSections(node,editing?draft:node.body||'');
@@ -657,13 +603,13 @@ function DocumentPage({ navigationGuard, state, update, userId, nodeId, startEdi
           <header className="document-ai-header"><strong><Sparkle size={18} weight="fill"/>问AI</strong><div><button type="button" aria-label="新建对话" onClick={freshConversation}><Plus size={19}/></button><button type="button" aria-label="关闭 AI 面板" onClick={()=>setAiOpen(false)}><X size={19}/></button></div></header>
           <div className="conversation-scroll document-ai-conversation-scroll"><article className="conversation-body">
             <section className="document-ai-overview"><button className="document-ai-section-title" type="button" aria-expanded={overviewOpen} onClick={()=>setOverviewOpen(open=>!open)}><span>知识概览<Sparkle size={13} weight="fill"/></span><CaretDown size={16} className={overviewOpen?'':'closed'}/></button>{overviewOpen&&<><p>可以围绕<strong>{node.name}</strong>提问，也可选择其他有权查看的知识。</p><div className="document-ai-actions"><button type="button" onClick={()=>ask('请总结这篇文档')}><FileText size={16} weight="fill"/>知识总结</button><button type="button"><ProjectorScreenChart size={16} weight="fill"/>PPT制作</button><button type="button"><ChartBar size={16} weight="fill"/>思维导图</button><button type="button"><BookBookmark size={16} weight="fill"/>知识图解</button></div><div className="document-ai-related"><span>相关知识</span><button type="button"><FileText size={16}/>{node.name}</button></div></>}</section>
-            {messages.map((item, index) => <div key={index}><div className="question-bubble">{item.quote&&<span className="doc-message-quote">{item.quote}</span>}{item.question}{!!(item.skills?.length||item.expert||item.attachments?.length)&&<div className="doc-message-context">{[item.expert,...(item.skills||[]),...(item.attachments||[])].filter(Boolean).join(' · ')}</div>}</div><div className="answer-block"><div className="answer-brand"><span><Robot size={18} /></span><div><strong>知识库助手</strong><small>模拟回答</small></div></div><p>{answerAllowed(state, userId, item.answer) ? item.answer.text : "来源权限已变化，此回答暂不可查看。"}</p><div className="kb-citations">{item.answer.citations.filter(cite => can(nodeRole(state, state.nodes.find(n => n.id === cite.id), userId), "view")).map((cite) => <button key={cite.id} type="button" onClick={() => onOpen(cite.id)}><Copy size={14} />{cite.name}</button>)}</div></div></div>)}
+            {messages.map((item, index) => <div key={index}><div className="question-bubble">{item.quote&&<span className="doc-message-quote">{item.quote}</span>}{item.question}{!!(item.skills?.length||item.attachments?.length)&&<div className="doc-message-context">{[...(item.skills||[]),...(item.attachments||[])].filter(Boolean).join(' · ')}</div>}</div><div className="answer-block"><div className="answer-brand"><span><Robot size={18} /></span><div><strong>知识库助手</strong><small>模拟回答</small></div></div><p>{answerAllowed(state, userId, item.answer) ? item.answer.text : "来源权限已变化，此回答暂不可查看。"}</p><div className="kb-citations">{item.answer.citations.filter(cite => can(nodeRole(state, state.nodes.find(n => n.id === cite.id), userId), "view")).map((cite) => <button key={cite.id} type="button" onClick={() => onOpen(cite.id)}><Copy size={14} />{cite.name}</button>)}</div></div></div>)}
             {!messages.length && <div className="document-ai-empty"><Robot size={28} /><strong>针对当前文档提问</strong><p>试试问文档标题，命中问答时会返回原文。</p></div>}
           </article></div>
           <div className="composer conversation-composer document-ai-system-composer doc-interactive-composer">
             {(selectedQuote||documentSkills.length>0||documentAttachments.length>0)&&<div className="doc-composer-context">{selectedQuote&&<div className="doc-selection-quote" aria-label="引用的文档内容"><span>{selectedQuote.text}</span><button type="button" aria-label="移除引用内容" onClick={()=>{setSelectedQuote(null);setSelectionToolbar(null);}}><X size={12}/></button></div>}{!!documentSkills.length&&<div className="doc-skill-chips" aria-label="已选技能">{documentSkills.map(skill=><span className="doc-skill-chip" key={skill}><Sparkle size={12}/><span>{skill}</span><button type="button" aria-label={`移除技能 ${skill}`} onClick={()=>setDocumentSkills(items=>items.filter(item=>item!==skill))}><X size={11}/></button></span>)}</div>}{!!documentAttachments.length&&<div className="doc-ai-attachments" aria-label="本地附件">{documentAttachments.map(file=><div className="doc-ai-attachment" key={`${file.name}:${file.size}:${file.lastModified}`}><FileText size={18}/><span><strong title={file.name}>{file.name}</strong><small>{file.size<1024?`${file.size} B`:`${(file.size/1024).toFixed(1)} KB`}</small></span><button type="button" aria-label={`移除附件 ${file.name}`} onClick={()=>setDocumentAttachments(files=>files.filter(item=>item!==file))}><X size={12}/></button></div>)}</div>}</div>}
             <textarea value={question} onChange={event=>setQuestion(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.nativeEvent.isComposing){event.preventDefault();ask();}}} placeholder={selectedQuote||documentSkills.length?'':'围绕文档提问，或选中正文引用'}/>
-            <div className="composer-bottom"><div className="composer-tools"><DocumentCapabilityPicker expert={documentExpert} onExpertChange={setDocumentExpert} onSkillSelect={chooseDocumentSkill}/><DocumentKnowledgePicker state={state} userId={userId} node={node} value={knowledge} onChange={setKnowledge} attachments={documentAttachments} onAttachmentsChange={setDocumentAttachments} onNotice={say}/></div><div className="send-tools"><button type="button" className="send" aria-label="发送" disabled={!question.trim()} onClick={()=>ask()}><ArrowUp size={22} weight="bold"/></button></div></div>
+            <div className="composer-bottom"><div className="composer-tools"><DocumentCapabilityPicker onSkillSelect={chooseDocumentSkill}/><DocumentKnowledgePicker state={state} userId={userId} node={node} value={knowledge} onChange={setKnowledge} attachments={documentAttachments} onAttachmentsChange={setDocumentAttachments} onNotice={say}/></div><div className="send-tools"><button type="button" className="send" aria-label="发送" disabled={!question.trim()} onClick={()=>ask()}><ArrowUp size={22} weight="bold"/></button></div></div>
           </div>
           <p className="ai-content-disclaimer">内容由模拟回答生成，请核实重要信息。</p>
         </aside>}
